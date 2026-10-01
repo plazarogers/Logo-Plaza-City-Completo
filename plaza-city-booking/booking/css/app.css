@@ -315,3 +315,16 @@ body.no-nav .confirmbar { bottom: 0; }
 .countdown { font: 700 1.05rem var(--pc-font-head); font-variant-numeric: tabular-nums; color: var(--pc-link); }
 .countdown.big { font-size: 1.6rem; margin: 6px 0 12px; }
 @media (min-width: 900px) { #banner { margin-left: 220px; } body.no-nav #banner { margin-left: 0; } }
+
+/* Botón de Google Calendar dentro del bloque que apartaste (una vez por apartado). */
+.hour.mine { cursor: default; }
+.hour.has-gcal { grid-template-rows: auto auto; row-gap: 8px; }
+.hour .gcal {
+  grid-column: 1 / -1; display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+  min-height: 44px; padding: 8px 12px; border-radius: var(--pc-radius-sm);
+  background: var(--pc-surface); color: var(--pc-mine-ink); border: 1px solid var(--pc-mine-ink);
+  font-weight: 600; font-size: .9rem; text-decoration: none;
+}
+.hour .gcal svg { width: 18px; height: 18px; flex: 0 0 auto; }
+.hour .gcal:hover { background: var(--pc-mine-ink); color: var(--pc-surface); }
+.hour .gcal:focus-visible { outline: 3px solid var(--pc-focus); outline-offset: 2px; }

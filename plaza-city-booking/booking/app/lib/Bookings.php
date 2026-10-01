@@ -330,6 +330,9 @@ final class Bookings
                         'id' => (int) $r['id'], 'mine' => (int) $r['user_id'] === $viewerId, 'user_name' => $r['name'],
                         'user_company' => $r['company'], 'status' => $r['status'], 'checked_in' => (bool) $r['checked_in_at'],
                         'start_hour' => (int) $r['start_hour'], 'end_hour' => (int) $r['end_hour'], 'note' => $r['note'],
+                        // Solo el dueño del apartado recibe las horas exactas para su botón de Google Calendar.
+                        'calendar' => (int) $r['user_id'] === $viewerId && $r['status'] === 'active' && $r['end_at'] > Time::iso($now)
+                            ? ['start_at' => $r['start_at'], 'end_at' => $r['end_at']] : null,
                     ] + $reqInfo[(int) $r['id']] : null,
                     'hold' => $r ? null : $hold,
                 ];

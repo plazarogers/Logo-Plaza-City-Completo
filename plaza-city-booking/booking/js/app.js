@@ -46,6 +46,7 @@ const ICONS = {
   mine: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M9 11l3 3 8-8"/><path d="M20 12v6a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h9"/></svg>',
   activity: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M4 19h16M4 15l4-4 4 3 8-8"/></svg>',
   settings: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M4.2 4.2l2.1 2.1M17.7 17.7l2.1 2.1M2 12h3M19 12h3M4.2 19.8l2.1-2.1M17.7 6.3l2.1-2.1"/></svg>',
+  gcal: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4M12 13v5M9.5 15.5h5"/></svg>',
 };
 function renderLangSwitch() {
   document.querySelectorAll('#langswitch [data-lang]').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.lang === getLang())));
@@ -274,11 +275,27 @@ function renderDay() {
       : h.hold && h.hold.mine ? t('req.heldForYou', { time: h.hold.until })
       : h.past ? t('cal.past') : t('cal.free');
     const tag = b && b.checked_in ? `<span class="chip info">${t('cal.checkedIn')}</span>` : h.kind === 'special' ? `<span class="kind" title="${t('cal.special')}">${t('cal.specialShort')}</span>` : '';
+    // Un solo botón por apartado: va en la primera hora del bloque (11–13 → en la de 11).
+    if (b && b.mine && b.calendar) {
+      const first = !d.hours.some((x) => x.hour < h.hour && x.booking && x.booking.id === b.id);
+      const link = first ? `<a class="gcal" href="${esc(gcalUrl(b))}" target="_blank" rel="noopener">${ICONS.gcal}<span>${t('cal.gcal')}</span></a>` : '';
+      return `<div class="hour mine ${first ? 'has-gcal' : ''}" data-hour="${h.hour}"><span class="t">${hh(h.hour)}</span><span class="who">${who}</span>${tag}${link}</div>`;
+    }
     return `<button class="hour ${cls} ${cal.sel.includes(h.hour) ? 'selected' : ''}" data-hour="${h.hour}" ${cls !== 'free' ? 'disabled' : ''} aria-pressed="${cal.sel.includes(h.hour)}"><span class="t">${hh(h.hour)}</span><span class="who">${who}</span>${tag}</button>`;
   }).join('') + '</div>';
   $day.querySelectorAll('.hour.free').forEach((el) => { el.onclick = () => toggleHour(Number(el.dataset.hour)); });
   bindRequestPanel($day);
   renderConfirm();
+}
+
+// Abre Google Calendar con el evento ya lleno; las horas van en UTC para que no dependa de la zona del teléfono.
+function gcalUrl(b) {
+  const utc = (iso) => new Date(iso).toISOString().replace(/[-:]/g, '').replace(/\.\d{3}/, '');
+  const name = `Plaza City · ${spaceName(cal.space)}`;
+  const checkin = new URL('#/mis-apartados', location.href).href;
+  const details = `${b.note ? b.note + '\n\n' : ''}${t('cal.gcalDetails')}: ${checkin}`;
+  const q = new URLSearchParams({ action: 'TEMPLATE', text: name, dates: `${utc(b.calendar.start_at)}/${utc(b.calendar.end_at)}`, location: name, details, ctz: state.config.timezone || 'America/Chicago' });
+  return `https://calendar.google.com/calendar/render?${q}`;
 }
 
 // ---------- solicitudes de espacio (quien pide) ----------
