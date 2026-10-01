@@ -104,7 +104,7 @@ if (Config::installed()) {
 <link rel="stylesheet" href="css/theme.css"><link rel="stylesheet" href="css/app.css">
 <style>body{padding-bottom:0}.page{margin:0 auto!important;max-width:640px!important}code{word-break:break-all;background:var(--pc-surface-2);padding:2px 6px;border-radius:4px}</style>
 </head><body>
-<header class="topbar"><a class="brand" href="./"><img src="icons/logo.svg" alt=""><div><b>PLAZA CITY</b><span>Instalación</span></div></a></header>
+<header class="topbar"><a class="brand" href="./"><img class="logo" src="icons/plaza-city-logo-128.png" alt="" width="40" height="40"><div><b>PLAZA CITY</b><span>Instalación</span></div></a></header>
 <main class="page">
 <?php if ($done === 'already'): ?>
   <div class="card"><h1>Ya está instalado</h1><p>Este instalador está desactivado porque <code>app/config.php</code> ya existe. Por seguridad puedes borrar <code>install.php</code> del servidor.</p><a class="btn primary" href="./">Abrir la app</a></div>

@@ -1,69 +1,88 @@
 /* =====================================================================
-   Identidad visual Plaza City — tokens de diseño.
-   Ajusta SOLO este archivo para alinear la app con plazacity.net.
-   (Ver docs/RESEARCH.md: el sitio no era accesible desde el entorno de
-   desarrollo; los valores son una base corporativa para sustituir por los
-   hex exactos del sitio.)
+   Identidad visual Plaza City: tokens de diseño.
+   Colores tomados del logo oficial de Plaza City:
+     azul marino #071B55 · azul #20599A · verde #8DC22E
+   El verde es claro (2.1:1 sobre blanco): se usa como fondo de botones con
+   texto azul marino, o como acento decorativo, nunca como texto sobre blanco.
+   Todo color de texto cumple 4.5:1 y todo indicador gráfico 3:1.
    ===================================================================== */
 :root {
-  /* Marca */
-  --pc-navy: #14213d;        /* primario: encabezados, barra, botones */
-  --pc-navy-700: #1f2f54;
-  --pc-navy-900: #0d1730;
-  --pc-gold: #e5a100;        /* acento: acciones principales, selección */
-  --pc-gold-600: #c78c00;
-  --pc-gold-100: #fff3d1;
+  /* Marca (logo) */
+  --pc-brand-navy: #071b55;
+  --pc-brand-blue: #20599a;
+  --pc-brand-green: #8dc22e;
 
-  /* Neutros */
-  --pc-bg: #f4f5f7;
+  /* Roles */
+  --pc-navy: #071b55;            /* barra superior, títulos de marca */
+  --pc-topbar: #071b55;
+  --pc-primary: #8dc22e;         /* botón principal (Confirmar, Entrar) */
+  --pc-primary-hover: #7db21f;
+  --pc-on-primary: #071b55;      /* 7.6:1 sobre el verde */
+  --pc-link: #20599a;            /* enlaces y estado activo, 7.1:1 */
+  --pc-focus: #20599a;
+  --pc-selected: #071b55;        /* pestaña y día seleccionados */
+  --pc-on-selected: #ffffff;
+  --pc-accent: #8dc22e;          /* acentos decorativos: línea de la barra, borde de confirmar */
+  --pc-accent-strong: #4d7a12;   /* verde con contraste para indicadores (5.1:1) */
+  --pc-accent-soft: #eef7e0;
+  --pc-nav-active: #20599a;
+  --pc-warn: #8a5a00;            /* avisos (sin check-in) */
+
+  /* Neutros con un leve tinte azul de la marca */
+  --pc-bg: #f3f5fa;
   --pc-surface: #ffffff;
-  --pc-surface-2: #eef0f4;
-  --pc-border: #d9dde5;
-  --pc-text: #1b1f24;
-  --pc-text-2: #5b6472;
-  --pc-text-3: #6b7380;      /* 4.8:1 sobre blanco */
+  --pc-surface-2: #eaeef6;
+  --pc-border: #d5dcea;
+  --pc-text: #111a33;
+  --pc-text-2: #4a5672;
+  --pc-text-3: #5f6b85;          /* 5.3:1 sobre blanco */
 
-  /* Estados */
-  --pc-free: #e6f4ea;   --pc-free-ink: #1e7a3c;
-  --pc-busy: #fdecec;   --pc-busy-ink: #b42323;
-  --pc-mine: #fff3d1;   --pc-mine-ink: #8a5a00;
-  --pc-past: #f1f2f4;   --pc-past-ink: #5d6573;  /* 5.2:1 */
-  --pc-special: #e8eefc; --pc-special-ink: #2c4fa8;
-  --pc-info: #e8eefc;
+  /* Estados de las horas */
+  --pc-free: #eef7e0;   --pc-free-ink: #3f6a0c;     /* Libre: verde del logo, 5.8:1 */
+  --pc-busy: #fdecec;   --pc-busy-ink: #b42323;     /* Ocupado */
+  --pc-mine: #e4edf8;   --pc-mine-ink: #20599a;     /* Tuyo: azul del logo, 6.0:1 */
+  --pc-past: #eef1f6;   --pc-past-ink: #5a6478;     /* Pasado, 5.3:1 */
+  --pc-special: #ecf0fa; --pc-special-ink: #071b55; /* Sesión especial */
+  --pc-info: #e4edf8;
 
-  /* Medidores de ocupación: relleno >= 3:1 contra la tarjeta y la pista (WCAG 1.4.11);
-     la pista es un paso claro de la misma familia de color. */
-  --pc-meter: #a06f00;
-  --pc-meter-track: #fff3d1;
+  /* Medidores: relleno azul 5.6:1 contra su pista y 7.1:1 contra la tarjeta */
+  --pc-meter: #20599a;
+  --pc-meter-track: #dbe6f3;
 
-  /* Tipografía: Montserrat para títulos (tono corporativo), Inter para texto */
+  /* Tipografía: Montserrat para títulos (cercana al logotipo), Inter para texto */
   --pc-font-head: 'Montserrat', 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
   --pc-font-body: 'Inter', 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
 
   --pc-radius: 12px;
   --pc-radius-sm: 8px;
-  --pc-shadow: 0 1px 2px rgba(13, 23, 48, .06), 0 4px 16px rgba(13, 23, 48, .06);
+  --pc-shadow: 0 1px 2px rgba(7, 27, 85, .06), 0 4px 16px rgba(7, 27, 85, .07);
   --pc-nav-h: 60px;
 }
 
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) {
-    --pc-bg: #0f1522;
-    --pc-surface: #171f31;
-    --pc-surface-2: #1f2940;
-    --pc-border: #2b3650;
-    --pc-text: #eef1f6;
-    --pc-text-2: #aab3c2;
-    --pc-text-3: #939db0;
-    --pc-free: #14301f;  --pc-free-ink: #6fd18f;
+    --pc-topbar: #071444;
+    --pc-primary: #9bd13d;  --pc-primary-hover: #aedd5a;  --pc-on-primary: #071b55;
+    --pc-link: #8db4ea;  --pc-focus: #8db4ea;
+    --pc-selected: #20599a;  --pc-on-selected: #ffffff;
+    --pc-accent: #9bd13d;  --pc-accent-strong: #9bd13d;  --pc-accent-soft: #1b2e14;
+    --pc-nav-active: #8db4ea;
+    --pc-warn: #ffcf5c;
+    --pc-bg: #0b1330;
+    --pc-surface: #121c3d;
+    --pc-surface-2: #1a2650;
+    --pc-border: #2a3a6b;
+    --pc-text: #eef2fb;
+    --pc-text-2: #b3bfd8;
+    --pc-text-3: #97a4c4;
+    --pc-free: #1b2e14;  --pc-free-ink: #b4e06a;
     --pc-busy: #3a1919;  --pc-busy-ink: #ff8a8a;
-    --pc-mine: #3a2c08;  --pc-mine-ink: #ffcf5c;
-    --pc-past: #161c29;  --pc-past-ink: #9aa3b2;
-    --pc-special: #1c2745; --pc-special-ink: #9fb6ff;
-    --pc-info: #1c2745;
-    --pc-gold-100: #3a2c08;
-    --pc-meter: #e5a100;
-    --pc-meter-track: #2b2410;
+    --pc-mine: #16294f;  --pc-mine-ink: #a9c8f2;
+    --pc-past: #172042;  --pc-past-ink: #a2abc0;
+    --pc-special: #1a2650; --pc-special-ink: #c9d6f2;
+    --pc-info: #16294f;
+    --pc-meter: #6f9fe0;  --pc-meter-track: #1f2d55;
     --pc-shadow: 0 1px 2px rgba(0,0,0,.3), 0 4px 16px rgba(0,0,0,.25);
+    color-scheme: dark;
   }
 }

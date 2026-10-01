@@ -109,7 +109,7 @@ async function route() {
 }
 
 // ---------- autenticación ----------
-const authShell = (inner) => `<div class="auth"><div class="logo"><img src="icons/logo.svg" alt="Plaza City"><h1>Plaza City</h1><div class="muted">${t('app.subtitle')}</div></div>${inner}</div>`;
+const authShell = (inner) => `<div class="auth"><div class="logo"><img src="icons/plaza-city-logo.png" alt="Plaza City" width="148" height="148"><h1 class="sr-only">Plaza City</h1><div class="muted">${t('app.subtitle')}</div></div>${inner}</div>`;
 function bindForm(sel, fn) {
   const f = $app.querySelector(sel);
   f.onsubmit = async (e) => {

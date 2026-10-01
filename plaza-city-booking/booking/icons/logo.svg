@@ -1,18 +1,6 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" width="128" height="128">
-  <rect width="128" height="128" rx="24" fill="#14213d"/>
-  <g fill="#ffffff">
-    <rect x="22" y="58" width="22" height="46" rx="2"/>
-    <rect x="53" y="30" width="22" height="74" rx="2"/>
-    <rect x="84" y="46" width="22" height="58" rx="2"/>
-  </g>
-  <g fill="#14213d">
-    <rect x="28" y="66" width="4" height="4"/><rect x="36" y="66" width="4" height="4"/>
-    <rect x="28" y="76" width="4" height="4"/><rect x="36" y="76" width="4" height="4"/>
-    <rect x="59" y="38" width="4" height="4"/><rect x="67" y="38" width="4" height="4"/>
-    <rect x="59" y="48" width="4" height="4"/><rect x="67" y="48" width="4" height="4"/>
-    <rect x="59" y="58" width="4" height="4"/><rect x="67" y="58" width="4" height="4"/>
-    <rect x="90" y="54" width="4" height="4"/><rect x="98" y="54" width="4" height="4"/>
-    <rect x="90" y="64" width="4" height="4"/><rect x="98" y="64" width="4" height="4"/>
-  </g>
-  <rect x="16" y="104" width="96" height="6" rx="3" fill="#e5a100"/>
-</svg>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" width="128" height="128"><rect width="128" height="128" rx="28" fill="#071b55"/><rect x="24" y="30" width="80" height="72" rx="11" fill="#ffffff"/>
+  <path d="M24 41a11 11 0 0 1 11-11h58a11 11 0 0 1 11 11v7H24z" fill="#8dc22e"/>
+  <rect x="39" y="22" width="8" height="17" rx="4" fill="#ffffff" stroke="#071b55" stroke-width="2.5"/>
+  <rect x="81" y="22" width="8" height="17" rx="4" fill="#ffffff" stroke="#071b55" stroke-width="2.5"/>
+  <polygon fill="#8dc22e" points="45.8,62.66 35,68.6 35,82.2 45.8,76.26"/><polygon fill="#8dc22e" points="45.8,79.06 35,85 35,96 45.8,96"/><polygon fill="#071b55" points="48.2,62.66 59,68.6 59,82.2 48.2,76.26"/><polygon fill="#071b55" points="48.2,79.06 59,85 59,96 48.2,96"/><polygon fill="#20599a" points="74.8,52.66 60,60.8 60,77.4 74.8,69.26"/><polygon fill="#20599a" points="74.8,72.06 60,80.2 60,96 74.8,96"/><polygon fill="#071b55" points="77.2,52.66 92,60.8 92,77.4 77.2,69.26"/><polygon fill="#071b55" points="77.2,72.06 92,80.2 92,96 77.2,96"/>
+  <path d="M27 99 Q64 81 101 99 Q64 92.5 27 99 Z" fill="#071b55"/></svg>

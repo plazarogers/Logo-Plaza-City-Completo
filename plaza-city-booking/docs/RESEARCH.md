@@ -1,19 +1,23 @@
 # Investigación y decisiones
 
-## 1. Identidad corporativa de plazacity.net
+## 1. Identidad corporativa de Plaza City
 
-El entorno de desarrollo no pudo abrir `plazacity.net` (la red de la sesión lo
-bloquea), así que los colores exactos del sitio no se extrajeron. Por búsqueda
-pública se confirmó que Plaza City LLC es una constructora comercial con
-oficinas en 1310 Rayford Park Rd, Spring, TX, y que el sitio está formado por
-páginas `.html` (Home, General Contractor, Site Work, Gallery, Leasing Now,
-Contacts).
+La paleta y el logo vienen del logo oficial de Plaza City que entregó el dueño:
 
-La app usa una paleta corporativa sobria: azul marino `#14213d`, dorado
-`#e5a100`, Montserrat para títulos e Inter para texto. **Para igualarla al
-sitio** basta cambiar las variables de `booking/css/theme.css`, reemplazar
-`booking/icons/logo.svg` (y los PNG) por el logo oficial y, si aplica, la fuente
-en `booking/index.html`.
+| Color | Hex | Uso en la app |
+|---|---|---|
+| Azul marino | `#071B55` | Barra superior, pestaña y día seleccionados, fondo del ícono |
+| Azul | `#20599A` | Enlaces, estado activo, horas "tuyas", medidores de ocupación |
+| Verde | `#8DC22E` | Botón principal con texto azul marino, línea de la barra, horas libres |
+
+El verde solo llega a 2.1:1 sobre blanco, así que nunca se usa como texto sobre
+blanco. Para el texto "Libre" se usa un verde oscuro derivado (`#3F6A0C`, 5.8:1).
+Todos los colores de texto cumplen 4.5:1 y los indicadores gráficos 3:1, en modo
+claro y oscuro. Los tokens están en `booking/css/theme.css`.
+
+- **Logo:** `booking/icons/plaza-city-logo.png`, recortado en círculo con fondo transparente. Aparece en la barra superior y en las pantallas de entrada.
+- **Ícono de la app:** propuesta C3, una hoja de calendario con encabezado verde y las dos torres del logo redibujadas como vector. `booking/icons/logo.svg` sirve para la pestaña y la computadora; los PNG de 180, 192 y 512 px sirven para iPhone y Android, y `badge-72.png` es la silueta para notificaciones.
+- **Tipografía:** Montserrat para títulos, cercana al logotipo, e Inter para texto.
 
 ## 2. Por qué PHP + SQLite dentro de /booking
 

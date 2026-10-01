@@ -1,6 +1,6 @@
 /* Service worker: notificaciones push + caché mínima del "cascarón" de la app. */
-const CACHE = 'pcb-v5';
-const SHELL = ['./', 'index.html', 'css/theme.css', 'css/app.css', 'js/app.js', 'js/i18n.js', 'js/api.js', 'icons/logo.svg'];
+const CACHE = 'pcb-v6';
+const SHELL = ['./', 'index.html', 'css/theme.css', 'css/app.css', 'js/app.js', 'js/i18n.js', 'js/api.js', 'icons/logo.svg', 'icons/plaza-city-logo.png', 'icons/plaza-city-logo-128.png'];
 
 self.addEventListener('install', (e) => {
   e.waitUntil(caches.open(CACHE).then((c) => c.addAll(SHELL)).catch(() => {}).then(() => self.skipWaiting()));
