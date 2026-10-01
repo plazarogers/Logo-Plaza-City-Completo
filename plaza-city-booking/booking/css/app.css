@@ -227,3 +227,75 @@ body.no-nav .confirmbar { bottom: 0; }
 @media (prefers-color-scheme: dark) and (min-width: 900px) {
   :root:not([data-theme="light"]) .bottomnav a.active { background: var(--pc-gold-100); }
 }
+
+
+/* ---- Auditoría en teléfono: áreas táctiles de 44 px, texto mínimo de 12 px,
+   campos de 16 px para que iPhone no haga zoom, medidores con contraste. ---- */
+.btn.sm { min-height: 44px; padding: 8px 12px; }
+.tabs .tab { min-height: 44px; display: inline-flex; align-items: center; }
+.topbar .brand { min-height: 44px; }
+.input, input:not([type]), input[type=text], input[type=email], input[type=password], input[type=number], input[type=date], select, textarea { min-height: 44px; font-size: 16px; }
+.input.small, input.small { font-size: 16px; }
+.topbar .brand span { font-size: .75rem; }
+.bottomnav a { font-size: .75rem; }
+.daystrip button small { font-size: .75rem; letter-spacing: .04em; }
+.hour .kind { font-size: .75rem; letter-spacing: .04em; white-space: nowrap; }
+.bar { background: var(--pc-meter-track); }
+.bar i { background: var(--pc-meter); }
+.bar.full i { background: var(--pc-busy-ink); }
+.overview td { font-variant-numeric: tabular-nums; }
+.stat b { font-family: var(--pc-font-body); font-weight: 700; font-size: 2rem; line-height: 1.1; }
+@media (max-width: 359px) {
+  .daystrip { gap: 3px; }
+  .hour { grid-template-columns: 58px 1fr auto; gap: 8px; padding: 10px; }
+}
+
+/* ---- Auditoría visual en teléfono (2ª pasada) ---- */
+.bottomnav a span { white-space: nowrap; max-width: 100%; overflow: hidden; text-overflow: ellipsis; padding-inline: 2px; }
+.topbar { gap: 10px; }
+.topbar .brand { flex: 0 0 auto; white-space: nowrap; }
+.topbar .spacer { flex: 0 0 0; }
+.topbar .user { flex: 1 1 auto; min-width: 0; line-height: 1.3; }
+.topbar .user > div { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+@media (max-width: 359px) { .topbar .user > div + div { display: none; } .topbar .brand img { width: 30px; height: 30px; } }
+.overview th, .overview td:first-child { white-space: nowrap; }
+.overview td a.cell { color: var(--pc-text); font-weight: 600; text-decoration: none; display: flex; flex-direction: column; justify-content: center; gap: 4px; min-height: 44px; }
+.overview td a.cell .bar { display: block; margin-top: 0; }
+.overview td a.cell .muted { font-weight: 400; }
+.overview td a.cell:focus-visible { outline: 2px solid var(--pc-gold); outline-offset: 2px; border-radius: 4px; }
+.overview .chip { white-space: nowrap; }
+.clamp { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.confirmbar { padding-block: 10px; }
+.confirmbar .inner { flex-direction: column; align-items: stretch; gap: 8px; }
+.confirmbar .txt { min-width: 0; }
+.confirmbar .actions { display: flex; gap: 8px; }
+.confirmbar .actions #ok { flex: 1; }
+@media (min-width: 700px) {
+  .confirmbar .inner { flex-direction: row; align-items: center; }
+  .confirmbar #note { flex: 1; }
+  .confirmbar .actions #ok { flex: 0 0 auto; }
+}
+
+@media (max-width: 480px) {
+  #overview .overview th, #overview .overview td { padding: 8px 4px; }
+  #overview .overview td:first-child, #overview .overview th:first-child { padding-left: 0; }
+  #overview .overview .chip { padding: 3px 6px; }
+}
+
+@media (max-width: 379px) {
+  .card.week { padding-inline: 12px; }
+  #overview .overview .chip { white-space: normal; text-align: center; line-height: 1.2; }
+  #overview .overview th { white-space: normal; }
+}
+@media (max-width: 479px) {
+  #overview .overview { table-layout: fixed; width: 100%; }
+  #overview .overview th:first-child { width: 3.4em; }
+  #overview .overview .clamp { overflow-wrap: anywhere; }
+}
+
+/* Uso (administración): cifras lado a lado y ocupación como lista legible en teléfono */
+.stat-tiles { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.stat-tiles .stat { min-width: 0; }
+.occ-list { margin-top: 12px; }
+.occ-list .bar { margin-block: 8px 6px; height: 10px; }
+.num { font-variant-numeric: tabular-nums; }

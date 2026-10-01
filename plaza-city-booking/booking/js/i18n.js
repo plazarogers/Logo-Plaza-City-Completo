@@ -1,7 +1,7 @@
 // Textos de la interfaz. Español por defecto; inglés desde Ajustes.
 const es = {
   'app.subtitle': 'Áreas comunes',
-  'nav.home': 'Inicio', 'nav.calendar': 'Calendario', 'nav.mine': 'Mis apartados', 'nav.activity': 'Bitácora', 'nav.settings': 'Ajustes',
+  'nav.home': 'Inicio', 'nav.calendar': 'Calendario', 'nav.mine': 'Apartados', 'nav.activity': 'Bitácora', 'nav.settings': 'Ajustes',
   'auth.login': 'Iniciar sesión', 'auth.email': 'Correo', 'auth.password': 'Contraseña', 'auth.enter': 'Entrar',
   'auth.onlyInvite': 'El registro es únicamente con un link de invitación enviado por la administración del edificio. ¿Olvidaste tu contraseña? Pide a la administración un link para restablecerla.',
   'auth.register': 'Crear cuenta', 'auth.name': 'Nombre completo', 'auth.company': 'Empresa', 'auth.suite': 'Suite / oficina',
@@ -9,7 +9,7 @@ const es = {
   'auth.inviteFor': 'Invitación', 'auth.accessUntil': 'Acceso válido hasta el {date}.', 'auth.logout': 'Cerrar sesión',
   'auth.reset': 'Nueva contraseña', 'auth.resetBtn': 'Guardar y entrar', 'auth.resetDone': 'Contraseña actualizada.',
   'home.title': 'Hola, {name}', 'home.next': 'Tu próximo apartado', 'home.none': 'No tienes apartados próximos.', 'home.book': 'Apartar un espacio',
-  'home.week': 'Disponibilidad de los próximos 7 días', 'home.day': 'Día', 'home.freeUse': 'Uso libre', 'home.closed': 'Cerrado', 'home.hoursBooked': '{booked}/{total} h apartadas',
+  'home.week': 'Horas apartadas, próximos 7 días', 'home.day': 'Día', 'home.freeUse': 'Uso libre', 'home.closed': 'Cerrado', 'home.hoursBooked': '{booked}/{total} h', 'home.hoursBookedLong': '{booked} de {total} horas apartadas',
   'home.rules': 'Reglas del edificio', 'home.pushTip': 'Activa las notificaciones para enterarte cuando un espacio se aparte o se libere.', 'home.pushTipBtn': 'Activar',
   'rules.hours': 'Los apartados son por hora, en horario de Chicago (America/Chicago).',
   'rules.conference': 'Conference Room: lunes a viernes 8:00–17:00, más sesiones especiales 17:00–21:00.',
@@ -19,7 +19,7 @@ const es = {
   'rules.checkin': 'Haz check-in desde {before} min antes hasta {grace} min después del inicio; si no, el espacio se libera automáticamente. Te enviamos un recordatorio.',
   'rules.cancel': 'Solo quien apartó puede cancelar o liberar. Todos los inquilinos ven la bitácora de actividad.',
   'cal.title': 'Calendario', 'cal.prevWeek': 'Anterior', 'cal.nextWeek': 'Siguiente', 'cal.today': 'Hoy',
-  'cal.free': 'Libre', 'cal.busy': 'Ocupado', 'cal.mine': 'Tuyo', 'cal.past': 'Pasado', 'cal.special': 'Sesión especial',
+  'cal.free': 'Libre', 'cal.busy': 'Ocupado', 'cal.mine': 'Tuyo', 'cal.past': 'Pasado', 'cal.special': 'Sesión especial', 'cal.specialShort': 'Especial',
   'cal.freeUseTitle': 'Uso libre, por orden de llegada', 'cal.sunday': 'Los domingos no se aparta: el que llega primero lo usa.',
   'cal.holiday': 'Día festivo ({name}): no se aparta, el que llega primero lo usa.', 'cal.closedDay': 'Este espacio no tiene horario este día.',
   'cal.closure': 'Cerrado por la administración: {reason}', 'cal.closureFree': 'Aviso de la administración: {reason}',
@@ -71,10 +71,11 @@ const es = {
   'hlt.dbInside': 'Dentro de la carpeta web, bloqueada.', 'hlt.dbOutside': 'Fuera de la carpeta web.', 'hlt.outbox': 'Notificaciones pendientes de envío',
   'common.loading': 'Cargando…', 'common.error': 'Ocurrió un error.', 'common.hours': 'h', 'common.offline': 'Sin conexión. Revisa tu internet.',
   'space.conference': 'Conference Room', 'space.atrium': 'Atrium', 'space.lounge': 'Lounge (2º piso)',
+  'spaceShort.conference': 'Conference', 'spaceShort.atrium': 'Atrium', 'spaceShort.lounge': 'Lounge',
 };
 const en = {
   'app.subtitle': 'Shared spaces',
-  'nav.home': 'Home', 'nav.calendar': 'Calendar', 'nav.mine': 'My bookings', 'nav.activity': 'Activity', 'nav.settings': 'Settings',
+  'nav.home': 'Home', 'nav.calendar': 'Calendar', 'nav.mine': 'Bookings', 'nav.activity': 'Activity', 'nav.settings': 'Settings',
   'auth.login': 'Sign in', 'auth.email': 'Email', 'auth.password': 'Password', 'auth.enter': 'Sign in',
   'auth.onlyInvite': 'Registration is only possible through an invitation link from building management. Forgot your password? Ask management for a reset link.',
   'auth.register': 'Create account', 'auth.name': 'Full name', 'auth.company': 'Company', 'auth.suite': 'Suite / office',
@@ -82,7 +83,7 @@ const en = {
   'auth.inviteFor': 'Invitation', 'auth.accessUntil': 'Access valid until {date}.', 'auth.logout': 'Sign out',
   'auth.reset': 'New password', 'auth.resetBtn': 'Save and sign in', 'auth.resetDone': 'Password updated.',
   'home.title': 'Hi, {name}', 'home.next': 'Your next booking', 'home.none': 'You have no upcoming bookings.', 'home.book': 'Book a space',
-  'home.week': 'Availability for the next 7 days', 'home.day': 'Day', 'home.freeUse': 'Free use', 'home.closed': 'Closed', 'home.hoursBooked': '{booked}/{total} h booked',
+  'home.week': 'Hours booked, next 7 days', 'home.day': 'Day', 'home.freeUse': 'Free use', 'home.closed': 'Closed', 'home.hoursBooked': '{booked}/{total} h', 'home.hoursBookedLong': '{booked} of {total} hours booked',
   'home.rules': 'Building rules', 'home.pushTip': 'Turn on notifications to know when a space is booked or released.', 'home.pushTipBtn': 'Turn on',
   'rules.hours': 'Bookings are hourly, in Chicago time (America/Chicago).',
   'rules.conference': 'Conference Room: Monday–Friday 8:00–17:00, plus special sessions 17:00–21:00.',
@@ -92,7 +93,7 @@ const en = {
   'rules.checkin': 'Check in from {before} min before until {grace} min after the start; otherwise the space is released automatically. You will get a reminder.',
   'rules.cancel': 'Only the person who booked can cancel or release. Every tenant can see the activity log.',
   'cal.title': 'Calendar', 'cal.prevWeek': 'Previous', 'cal.nextWeek': 'Next', 'cal.today': 'Today',
-  'cal.free': 'Free', 'cal.busy': 'Booked', 'cal.mine': 'Yours', 'cal.past': 'Past', 'cal.special': 'Special session',
+  'cal.free': 'Free', 'cal.busy': 'Booked', 'cal.mine': 'Yours', 'cal.past': 'Past', 'cal.special': 'Special session', 'cal.specialShort': 'Special',
   'cal.freeUseTitle': 'Free use, first come first served', 'cal.sunday': 'No bookings on Sundays: whoever arrives first uses it.',
   'cal.holiday': 'Federal holiday ({name}): no bookings, whoever arrives first uses it.', 'cal.closedDay': 'This space has no hours on this day.',
   'cal.closure': 'Closed by building management: {reason}', 'cal.closureFree': 'Notice from building management: {reason}',
@@ -144,6 +145,7 @@ const en = {
   'hlt.dbInside': 'Inside the web folder, blocked.', 'hlt.dbOutside': 'Outside the web folder.', 'hlt.outbox': 'Notifications waiting to be sent',
   'common.loading': 'Loading…', 'common.error': 'Something went wrong.', 'common.hours': 'h', 'common.offline': 'You are offline. Check your connection.',
   'space.conference': 'Conference Room', 'space.atrium': 'Atrium', 'space.lounge': 'Lounge (2nd floor)',
+  'spaceShort.conference': 'Conference', 'spaceShort.atrium': 'Atrium', 'spaceShort.lounge': 'Lounge',
 };
 
 const dicts = { es, en };

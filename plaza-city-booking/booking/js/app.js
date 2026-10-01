@@ -70,6 +70,7 @@ window.addEventListener('offline', renderBanner);
 // ---------- router ----------
 async function route() {
   const { path, q } = parseHash();
+  $app.style.paddingBottom = '';
   renderChrome(path);
   renderBanner();
   window.scrollTo(0, 0);
@@ -154,7 +155,7 @@ async function viewHome() {
   $app.innerHTML = `<h1>${t('home.title', { name: esc(state.user.name.split(' ')[0]) })}</h1>
     <div id="pushtip"></div>
     <div class="card" id="next">${t('common.loading')}</div>
-    <div class="card"><h2>${t('home.week')}</h2><div id="overview">${t('common.loading')}</div></div>
+    <div class="card week"><h2>${t('home.week')}</h2><div id="overview">${t('common.loading')}</div></div>
     <div class="card"><h2>${t('home.rules')}</h2><ul class="small stack" style="padding-left:18px;margin:0">
       <li>${t('rules.hours')}</li><li>${t('rules.conference')}</li><li>${t('rules.atrium')}</li><li>${t('rules.sunday')}</li>
       <li>${t('rules.window', { days: r.booking_window_days, max: r.max_hours_per_booking, quota: r.max_hours_per_user_per_day })}</li>
@@ -167,15 +168,15 @@ async function viewHome() {
   const next = mine.bookings.filter((b) => b.status === 'active').sort((a, b) => a.start_at.localeCompare(b.start_at))[0];
   $app.querySelector('#next').innerHTML = `<h2>${t('home.next')}</h2>` + (next ? bookingCard(next) : `<p class="muted">${t('home.none')}</p>`) +
     `<a class="btn primary block" style="margin-top:10px" href="#/calendario">${t('home.book')}</a>`;
-  $app.querySelector('#overview').innerHTML = `<div class="tablewrap"><table class="overview"><thead><tr><th>${t('home.day')}</th>${state.config.spaces.map((s) => `<th>${spaceName(s.id)}</th>`).join('')}</tr></thead><tbody>
+  $app.querySelector('#overview').innerHTML = `<div class="tablewrap"><table class="overview"><thead><tr><th>${t('home.day')}</th>${state.config.spaces.map((s) => `<th title="${spaceName(s.id)}">${t('spaceShort.' + s.id)}</th>`).join('')}</tr></thead><tbody>
     ${ov.days.map((d) => `<tr><td><b>${fmtDate(d.date, { weekday: 'short', day: 'numeric' })}</b></td>${d.spaces.map((s) => {
       if (!s.open) {
         const free = ['sunday', 'holiday', 'closure_free'].includes(s.reason);
         const sub = s.holiday ? holidayName(s.holiday) : s.closure ? s.closure.reason : '';
-        return `<td><a href="#/calendario?space=${s.id}&date=${d.date}"><span class="chip ${free ? 'free' : 'past'}">${free ? t('home.freeUse') : t('home.closed')}</span></a>${sub ? `<div class="small muted">${esc(sub)}</div>` : ''}</td>`;
+        return `<td><a class="cell" href="#/calendario?space=${s.id}&date=${d.date}"><span class="chip ${free ? 'free' : 'past'}">${free ? t('home.freeUse') : t('home.closed')}</span>${sub ? `<span class="small muted clamp">${esc(sub)}</span>` : ''}</a></td>`;
       }
       const full = s.booked >= s.total;
-      return `<td><a href="#/calendario?space=${s.id}&date=${d.date}">${t('home.hoursBooked', { booked: s.booked, total: s.total })}</a><div class="bar ${full ? 'full' : ''}"><i style="width:${Math.round((s.booked / s.total) * 100)}%"></i></div></td>`;
+      return `<td><a class="cell" href="#/calendario?space=${s.id}&date=${d.date}" aria-label="${spaceName(s.id)}: ${t('home.hoursBookedLong', { booked: s.booked, total: s.total })}"><span>${t('home.hoursBooked', { booked: s.booked, total: s.total })}</span><span class="bar ${full ? 'full' : ''}" aria-hidden="true"><i style="width:${Math.round((s.booked / s.total) * 100)}%"></i></span></a></td>`;
     }).join('')}</tr>`).join('')}</tbody></table></div>`;
   bindBookingActions();
 }
@@ -239,7 +240,7 @@ function renderDay() {
     const b = h.booking;
     const cls = b ? (b.mine ? 'mine' : 'busy') : h.past ? 'past' : 'free';
     const who = b ? `${esc(b.user_name)}${b.user_company ? ' · ' + esc(b.user_company) : ''}${b.note ? ' — ' + esc(b.note) : ''}` : h.past ? t('cal.past') : t('cal.free');
-    const tag = b && b.checked_in ? `<span class="chip info">${t('cal.checkedIn')}</span>` : h.kind === 'special' ? `<span class="kind">${t('cal.special')}</span>` : '';
+    const tag = b && b.checked_in ? `<span class="chip info">${t('cal.checkedIn')}</span>` : h.kind === 'special' ? `<span class="kind" title="${t('cal.special')}">${t('cal.specialShort')}</span>` : '';
     return `<button class="hour ${cls} ${cal.sel.includes(h.hour) ? 'selected' : ''}" data-hour="${h.hour}" ${cls !== 'free' ? 'disabled' : ''} aria-pressed="${cal.sel.includes(h.hour)}"><span class="t">${hh(h.hour)}</span><span class="who">${who}</span>${tag}</button>`;
   }).join('') + '</div>';
   $day.querySelectorAll('.hour.free').forEach((el) => { el.onclick = () => toggleHour(Number(el.dataset.hour)); });
@@ -261,11 +262,13 @@ function toggleHour(h) {
 }
 function renderConfirm() {
   const $c = $app.querySelector('#confirm');
-  if (!cal.sel.length) { $c.innerHTML = ''; return; }
+  if (!cal.sel.length) { $c.innerHTML = ''; $app.style.paddingBottom = ''; return; }
   const lo = Math.min(...cal.sel), hi = Math.max(...cal.sel) + 1;
-  $c.innerHTML = `<div class="confirmbar"><div class="inner"><div class="txt"><b>${t('cal.selected', { space: spaceName(cal.space), date: fmtDate(cal.date, { weekday: 'short', day: 'numeric', month: 'short' }), from: hh(lo), to: hh(hi), n: hi - lo })}</b>
-    <input id="note" class="input" style="margin-top:6px" maxlength="120" placeholder="${t('cal.note')}" aria-label="${t('cal.note')}"></div>
-    <button class="btn ghost sm" id="clear">${t('cal.clear')}</button><button class="btn primary" id="ok">${t('cal.confirm')}</button></div></div>`;
+  $c.innerHTML = `<div class="confirmbar" role="region" aria-label="${t('cal.confirm')}"><div class="inner"><div class="txt"><b>${t('cal.selected', { space: spaceName(cal.space), date: fmtDate(cal.date, { weekday: 'short', day: 'numeric', month: 'short' }), from: hh(lo), to: hh(hi), n: hi - lo })}</b></div>
+    <input id="note" class="input" maxlength="120" placeholder="${t('cal.note')}" aria-label="${t('cal.note')}">
+    <div class="actions"><button class="btn ghost" id="clear">${t('cal.clear')}</button><button class="btn primary" id="ok">${t('cal.confirm')}</button></div></div></div>`;
+  // Reserva espacio al final de la página para que la barra no tape las últimas horas.
+  $app.style.paddingBottom = `${$c.querySelector('.confirmbar').offsetHeight + 16}px`;
   $c.querySelector('#clear').onclick = () => { cal.sel = []; renderDay(); };
   $c.querySelector('#ok').onclick = async () => {
     const btn = $c.querySelector('#ok'); btn.disabled = true;
@@ -503,9 +506,13 @@ async function adminClosures($p) {
 async function adminStats($p) {
   const s = await api.get('owner/stats&days=30', ownerH());
   $p.innerHTML = `<div class="card"><p class="muted small">${t('sta.desc')} (${s.from} → ${s.to})</p>
-    <div class="grid cols-2"><div class="stat"><b>${s.users}</b><span>${t('sta.users')}</span></div><div class="stat"><b>${s.push_devices}</b><span>${t('sta.devices')}</span></div></div>
-    <div class="tablewrap" style="margin-top:12px"><table class="overview"><thead><tr><th>${t('sta.space')}</th><th>${t('sta.hours')}</th><th>${t('sta.occ')}</th><th>${t('sta.noShows')}</th><th>${t('sta.cancelled')}</th></tr></thead>
-    <tbody>${s.spaces.map((x) => `<tr><td>${spaceName(x.id)}</td><td>${x.hours} / ${x.available_hours}</td><td>${Math.round(x.occupancy * 100)}%<div class="bar"><i style="width:${Math.round(x.occupancy * 100)}%"></i></div></td><td>${x.no_shows}</td><td>${x.cancelled}</td></tr>`).join('')}</tbody></table></div></div>
+    <div class="stat-tiles"><div class="stat"><b>${s.users}</b><span>${t('sta.users')}</span></div><div class="stat"><b>${s.push_devices}</b><span>${t('sta.devices')}</span></div></div>
+    <div class="list occ-list">${s.spaces.map((x) => {
+      const pct = Math.round(x.occupancy * 100);
+      return `<div class="item"><div class="row between"><b>${spaceName(x.id)}</b><b class="num">${pct}%</b></div>
+        <div class="bar" role="img" aria-label="${t('sta.occ')} ${pct}%"><i style="width:${pct}%"></i></div>
+        <div class="meta num">${t('sta.hours')}: ${x.hours} / ${x.available_hours} · ${t('sta.noShows')}: ${x.no_shows} · ${t('sta.cancelled')}: ${x.cancelled}</div></div>`;
+    }).join('')}</div></div>
     <div class="card"><h2>${t('sta.byCompany')}</h2><div class="list">${s.companies.map((c) => `<div class="item row between"><span>${esc(c.company)}</span><b>${c.hours} h</b></div>`).join('') || '<p class="muted">—</p>'}</div></div>
     <div class="card"><button class="btn" id="csv">${t('sta.export')}</button></div>
     <div class="card"><h2>${t('hlt.title')}</h2><div class="list" id="health">${t('common.loading')}</div></div>`;

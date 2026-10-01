@@ -21,15 +21,20 @@
   --pc-border: #d9dde5;
   --pc-text: #1b1f24;
   --pc-text-2: #5b6472;
-  --pc-text-3: #8a93a1;
+  --pc-text-3: #6b7380;      /* 4.8:1 sobre blanco */
 
   /* Estados */
   --pc-free: #e6f4ea;   --pc-free-ink: #1e7a3c;
   --pc-busy: #fdecec;   --pc-busy-ink: #b42323;
   --pc-mine: #fff3d1;   --pc-mine-ink: #8a5a00;
-  --pc-past: #f1f2f4;   --pc-past-ink: #9aa1ab;
+  --pc-past: #f1f2f4;   --pc-past-ink: #5d6573;  /* 5.2:1 */
   --pc-special: #e8eefc; --pc-special-ink: #2c4fa8;
   --pc-info: #e8eefc;
+
+  /* Medidores de ocupación: relleno >= 3:1 contra la tarjeta y la pista (WCAG 1.4.11);
+     la pista es un paso claro de la misma familia de color. */
+  --pc-meter: #a06f00;
+  --pc-meter-track: #fff3d1;
 
   /* Tipografía: Montserrat para títulos (tono corporativo), Inter para texto */
   --pc-font-head: 'Montserrat', 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
@@ -49,14 +54,16 @@
     --pc-border: #2b3650;
     --pc-text: #eef1f6;
     --pc-text-2: #aab3c2;
-    --pc-text-3: #7c8697;
+    --pc-text-3: #939db0;
     --pc-free: #14301f;  --pc-free-ink: #6fd18f;
     --pc-busy: #3a1919;  --pc-busy-ink: #ff8a8a;
     --pc-mine: #3a2c08;  --pc-mine-ink: #ffcf5c;
-    --pc-past: #161c29;  --pc-past-ink: #5f6877;
+    --pc-past: #161c29;  --pc-past-ink: #9aa3b2;
     --pc-special: #1c2745; --pc-special-ink: #9fb6ff;
     --pc-info: #1c2745;
     --pc-gold-100: #3a2c08;
+    --pc-meter: #e5a100;
+    --pc-meter-track: #2b2410;
     --pc-shadow: 0 1px 2px rgba(0,0,0,.3), 0 4px 16px rgba(0,0,0,.25);
   }
 }
