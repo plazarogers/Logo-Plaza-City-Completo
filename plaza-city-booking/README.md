@@ -102,6 +102,7 @@ Cuando vence el fin de contrato de un inquilino, su cuenta se desactiva sola.
 - Check-in desde 15 min antes hasta 15 min después del inicio. Recordatorio push 15 min antes. Sin check-in, el espacio se libera solo y se avisa a todos. Apartar la hora en curso cuenta como check-in.
 - Solo quien apartó puede cancelar; si ya empezó, "Liberar" devuelve las horas restantes.
 - Bitácora pública: quién apartó qué, cuándo y cuánto tiempo; cancelaciones, liberaciones y cierres.
+- **Idioma:** la app abre en el idioma del teléfono o la computadora. El botón **ES | EN** de la barra superior lo cambia al instante en cualquier pantalla, incluido el panel de administración. Con sesión iniciada, la elección se guarda en la cuenta: se respeta en todos sus dispositivos y las notificaciones push llegan en ese idioma.
 
 Los valores se cambian en `booking/app/config.php`, sección `rules` (ver
 `config.sample.php`). Los horarios de los espacios están en `booking/app/lib/Schedule.php`.

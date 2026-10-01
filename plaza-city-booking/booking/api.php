@@ -127,7 +127,8 @@ try {
         // ---------- inquilinos ----------
         case 'POST me':
             $u = Auth::requireUser();
-            $p = Auth::validateProfile(body() + ['name' => $u['name']], false);
+            // Lo que no venga en la petición conserva su valor (p. ej. cambiar solo el idioma).
+            $p = Auth::validateProfile(body() + ['name' => $u['name'], 'company' => $u['company'], 'suite' => $u['suite'], 'lang' => $u['lang']], false);
             Db::run('UPDATE users SET name = ?, company = ?, suite = ?, lang = ? WHERE id = ?', [$p['name'], $p['company'], $p['suite'], $p['lang'], $u['id']]);
             respond(200, ['user' => Auth::publicUser(Db::one('SELECT * FROM users WHERE id = ?', [$u['id']]))]);
         case 'POST password':

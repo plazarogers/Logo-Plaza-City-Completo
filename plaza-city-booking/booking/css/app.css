@@ -299,3 +299,12 @@ body.no-nav .confirmbar { bottom: 0; }
 .occ-list { margin-top: 12px; }
 .occ-list .bar { margin-block: 8px 6px; height: 10px; }
 .num { font-variant-numeric: tabular-nums; }
+
+/* Selector de idioma ES | EN en la barra superior (área táctil de 44 px) */
+.langswitch { flex: 0 0 auto; display: inline-flex; border: 1px solid rgba(255, 255, 255, .35); border-radius: 12px; overflow: hidden; }
+.langswitch button { min-width: 44px; min-height: 44px; border: 0; border-radius: 0; background: transparent; color: #fff; font: 700 .85rem/1 var(--pc-font-head); letter-spacing: .06em; cursor: pointer; }
+.langswitch button[aria-pressed="true"] { background: var(--pc-gold); color: #1b1300; }
+.langswitch button:focus-visible { outline: 2px solid var(--pc-gold); outline-offset: 2px; }
+.langswitch button:not([aria-pressed="true"]):hover { background: rgba(255, 255, 255, .12); }
+/* En teléfonos el nombre del usuario ya aparece en "Hola, …"; se oculta para dar espacio al selector. */
+@media (max-width: 479px) { .topbar .user { display: none; } .topbar .spacer { flex: 1 1 auto; } }

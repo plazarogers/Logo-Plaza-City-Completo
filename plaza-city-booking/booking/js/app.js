@@ -47,8 +47,26 @@ const ICONS = {
   activity: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M4 19h16M4 15l4-4 4 3 8-8"/></svg>',
   settings: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M4.2 4.2l2.1 2.1M17.7 17.7l2.1 2.1M2 12h3M19 12h3M4.2 19.8l2.1-2.1M17.7 6.3l2.1-2.1"/></svg>',
 };
+function renderLangSwitch() {
+  document.querySelectorAll('#langswitch [data-lang]').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.lang === getLang())));
+}
+// Cambia el idioma al instante. Con sesión iniciada también lo guarda en la cuenta,
+// así las notificaciones push llegan en ese idioma y se respeta en otros dispositivos.
+let langChosenWhileLoggedOut = false;
+document.getElementById('langswitch').addEventListener('click', async (e) => {
+  const b = e.target.closest('[data-lang]');
+  if (!b || b.dataset.lang === getLang()) return;
+  const lang = b.dataset.lang;
+  setLang(lang);
+  route(); // la pantalla cambia al instante; el guardado va en segundo plano
+  if (state.user) {
+    api.post('me', { lang }).then((r) => { if (state.user) state.user = r.user; }).catch((err) => toast(errorMsg(err)));
+  } else langChosenWhileLoggedOut = true;
+});
+
 function renderChrome(path) {
   document.getElementById('subtitle').textContent = t('app.subtitle');
+  renderLangSwitch();
   if (!state.user || path === '/admin') {
     $nav.innerHTML = ''; $nav.classList.add('hidden');
     $topUser.textContent = '';
@@ -105,6 +123,10 @@ function bindForm(sel, fn) {
   };
 }
 async function signedIn(user) {
+  if (langChosenWhileLoggedOut && user.lang !== getLang()) {
+    try { user = (await api.post('me', { lang: getLang() })).user; } catch {}
+  }
+  langChosenWhileLoggedOut = false;
   state.user = user; setLang(user.lang);
   await refreshConfig();
 }
@@ -114,9 +136,7 @@ function viewLogin() {
     <form id="f"><label class="field"><span>${t('auth.email')}</span><input name="email" type="email" required autocomplete="email"></label>
     <label class="field"><span>${t('auth.password')}</span><input name="password" type="password" required autocomplete="current-password"></label>
     <div class="err"></div><button class="btn primary block">${t('auth.enter')}</button></form>
-    <p class="muted small" style="margin-top:14px">${t('auth.onlyInvite')}</p>
-    <div class="row" style="justify-content:center;margin-top:6px"><button class="btn ghost sm" id="lang">${getLang() === 'es' ? 'English' : 'Español'}</button></div></div>`);
-  $app.querySelector('#lang').onclick = () => { setLang(getLang() === 'es' ? 'en' : 'es'); route(); };
+    <p class="muted small" style="margin-top:14px">${t('auth.onlyInvite')}</p></div>`);
   bindForm('#f', async (data) => { const r = await api.post('login', data); await signedIn(r.user); go('#/'); });
 }
 
