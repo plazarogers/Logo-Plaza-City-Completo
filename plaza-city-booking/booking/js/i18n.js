@@ -65,6 +65,10 @@ const es = {
   'clo.reason': 'Motivo (visible para todos)', 'clo.add': 'Agregar', 'clo.none': 'No hay cierres programados.', 'clo.delete': 'Quitar', 'clo.added': 'Cierre agregado. Apartados cancelados: {n}.',
   'sta.desc': 'Uso de los últimos 30 días.', 'sta.space': 'Espacio', 'sta.hours': 'Horas apartadas', 'sta.occ': 'Ocupación', 'sta.noShows': 'No-shows', 'sta.cancelled': 'Cancelados',
   'sta.byCompany': 'Horas por empresa', 'sta.export': 'Descargar todos los apartados (CSV / Excel)', 'sta.users': 'Inquilinos activos', 'sta.devices': 'Dispositivos con notificaciones',
+  'hlt.title': 'Estado del sistema', 'hlt.fix': 'Revisar', 'hlt.https': 'Sitio con https', 'hlt.httpsFix': 'Activa el SSL y cambia base_url a https en app/config.php.',
+  'hlt.push': 'Notificaciones push configuradas', 'hlt.cron': 'Tarea automática (cron)', 'hlt.cronNever': 'No se ha detectado. Configúrala en el panel del hosting (ver guía).', 'hlt.cronAgo': 'Última ejecución hace {t}.',
+  'hlt.db': 'Base de datos protegida', 'hlt.dbFix': 'Se puede descargar desde internet: muévela fuera de public_html (ver guía).', 'hlt.dbUnknown': 'No se pudo verificar desde el servidor.',
+  'hlt.dbInside': 'Dentro de la carpeta web, bloqueada.', 'hlt.dbOutside': 'Fuera de la carpeta web.', 'hlt.outbox': 'Notificaciones pendientes de envío',
   'common.loading': 'Cargando…', 'common.error': 'Ocurrió un error.', 'common.hours': 'h', 'common.offline': 'Sin conexión. Revisa tu internet.',
   'space.conference': 'Conference Room', 'space.atrium': 'Atrium', 'space.lounge': 'Lounge (2º piso)',
 };
@@ -134,6 +138,10 @@ const en = {
   'clo.reason': 'Reason (visible to everyone)', 'clo.add': 'Add', 'clo.none': 'No closures scheduled.', 'clo.delete': 'Remove', 'clo.added': 'Closure added. Bookings cancelled: {n}.',
   'sta.desc': 'Usage over the last 30 days.', 'sta.space': 'Space', 'sta.hours': 'Hours booked', 'sta.occ': 'Occupancy', 'sta.noShows': 'No-shows', 'sta.cancelled': 'Cancelled',
   'sta.byCompany': 'Hours by company', 'sta.export': 'Download all bookings (CSV / Excel)', 'sta.users': 'Active tenants', 'sta.devices': 'Devices with notifications',
+  'hlt.title': 'System status', 'hlt.fix': 'Check', 'hlt.https': 'Site served over https', 'hlt.httpsFix': 'Enable SSL and change base_url to https in app/config.php.',
+  'hlt.push': 'Push notifications configured', 'hlt.cron': 'Scheduled task (cron)', 'hlt.cronNever': 'Not detected. Set it up in your hosting panel (see guide).', 'hlt.cronAgo': 'Last run {t} ago.',
+  'hlt.db': 'Database protected', 'hlt.dbFix': 'It can be downloaded from the internet: move it outside public_html (see guide).', 'hlt.dbUnknown': 'Could not be verified from the server.',
+  'hlt.dbInside': 'Inside the web folder, blocked.', 'hlt.dbOutside': 'Outside the web folder.', 'hlt.outbox': 'Notifications waiting to be sent',
   'common.loading': 'Loading…', 'common.error': 'Something went wrong.', 'common.hours': 'h', 'common.offline': 'You are offline. Check your connection.',
   'space.conference': 'Conference Room', 'space.atrium': 'Atrium', 'space.lounge': 'Lounge (2nd floor)',
 };

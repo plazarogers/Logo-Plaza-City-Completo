@@ -1,5 +1,5 @@
 /* Service worker: notificaciones push + caché mínima del "cascarón" de la app. */
-const CACHE = 'pcb-v2';
+const CACHE = 'pcb-v3';
 const SHELL = ['./', 'index.html', 'css/theme.css', 'css/app.css', 'js/app.js', 'js/i18n.js', 'js/api.js', 'icons/logo.svg'];
 
 self.addEventListener('install', (e) => {

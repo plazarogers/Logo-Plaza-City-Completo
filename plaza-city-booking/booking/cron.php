@@ -17,11 +17,13 @@ if (PHP_SAPI !== 'cli') {
         exit('forbidden');
     }
     header('Content-Type: text/plain; charset=utf-8');
+    header('Cache-Control: private, no-cache, no-store, must-revalidate');
 }
 if (!Config::installed()) {
     exit("not installed\n");
 }
 Db::pdo();
+Db::setMeta('last_cron', (string) time());
 $m = Bookings::maintenance();
 $p = Push::flush();
 echo json_encode($m + ['push_sent' => $p['sent'], 'push_failed' => $p['failed']]), "\n";

@@ -18,7 +18,7 @@ final class Db
         if ($path !== ':memory:') {
             $dir = dirname($path);
             if (!is_dir($dir)) {
-                @mkdir($dir, 0750, true);
+                @mkdir($dir, 0700, true);
             }
         }
         $pdo = new PDO('sqlite:' . $path, null, null, [
@@ -30,6 +30,12 @@ final class Db
         $pdo->exec('PRAGMA busy_timeout = 10000');
         if ($path !== ':memory:') {
             $pdo->exec('PRAGMA journal_mode = WAL');
+            // Solo el usuario de PHP puede leerla: si el servidor web (p. ej. NGINX en
+            // SiteGround) entrega archivos estáticos con otro usuario, recibe 403.
+            // SQLite crea los archivos -wal y -shm con estos mismos permisos.
+            if (is_file($path) && (fileperms($path) & 0077) !== 0) {
+                @chmod($path, 0600);
+            }
         }
         self::$pdo = $pdo;
         self::migrate($pdo);

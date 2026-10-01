@@ -124,6 +124,58 @@ final class Owner
             'push_devices' => (int) Db::value('SELECT COUNT(*) FROM push_subscriptions')];
     }
 
+    /**
+     * ¿Se puede descargar la base de datos desde internet? Hace una petición HTTP
+     * real a su URL. Importante en hosts donde NGINX entrega archivos sin leer
+     * .htaccess (p. ej. SiteGround con NGINX Direct Delivery).
+     * true = expuesta, false = protegida o fuera de la carpeta web, null = no se pudo verificar.
+     */
+    public static function dbExposed(): ?bool
+    {
+        $db = realpath((string) Config::get('db_path'));
+        $root = realpath(dirname(PCB_APP));
+        if (!$db || !$root || !str_starts_with($db, $root . DIRECTORY_SEPARATOR)) {
+            return false;
+        }
+        $rel = str_replace(DIRECTORY_SEPARATOR, '/', substr($db, strlen($root) + 1));
+        $url = rtrim((string) Config::get('base_url'), '/') . '/' . implode('/', array_map('rawurlencode', explode('/', $rel)));
+        if (!function_exists('curl_init')) {
+            return null;
+        }
+        $ch = curl_init($url);
+        curl_setopt_array($ch, [
+            CURLOPT_RETURNTRANSFER => true, CURLOPT_TIMEOUT => 5, CURLOPT_CONNECTTIMEOUT => 3,
+            CURLOPT_FOLLOWLOCATION => false, CURLOPT_RANGE => '0-15', CURLOPT_USERAGENT => 'PlazaCityBooking-SelfCheck',
+        ]);
+        $body = curl_exec($ch);
+        $code = (int) curl_getinfo($ch, CURLINFO_HTTP_CODE);
+        curl_close($ch);
+        if ($body === false || $code === 0) {
+            return null;
+        }
+        return in_array($code, [200, 206], true) && str_starts_with((string) $body, 'SQLite format');
+    }
+
+    public static function health(bool $checkExposure = true): array
+    {
+        $now = time();
+        $ago = fn (?string $v) => $v === null ? null : $now - (int) $v;
+        $db = (string) Config::get('db_path');
+        return [
+            'version' => PCB_VERSION,
+            'php' => PHP_VERSION,
+            'sqlite' => (string) Db::value('SELECT sqlite_version()'),
+            'https' => str_starts_with((string) Config::get('base_url'), 'https://'),
+            'push' => Push::enabled(),
+            'last_cron_seconds' => $ago(Db::meta('last_cron')),
+            'last_maintenance_seconds' => $ago(Db::meta('last_maintenance')),
+            'outbox_pending' => (int) Db::value('SELECT COUNT(*) FROM push_outbox'),
+            'db_size_kb' => is_file($db) ? (int) round(filesize($db) / 1024) : null,
+            'db_inside_web' => ($r = realpath($db)) && ($w = realpath(dirname(PCB_APP))) && str_starts_with($r, $w . DIRECTORY_SEPARATOR),
+            'db_exposed' => $checkExposure ? self::dbExposed() : null,
+        ];
+    }
+
     public static function csv(): string
     {
         $rows = Db::all(

@@ -4,7 +4,7 @@ declare(strict_types=1);
 require __DIR__ . '/app/bootstrap.php';
 
 header('Content-Type: application/json; charset=utf-8');
-header('Cache-Control: no-store');
+header('Cache-Control: private, no-cache, no-store, must-revalidate'); // SiteGround Dynamic Cache y cualquier proxy: nunca cachear
 header('X-Content-Type-Options: nosniff');
 header('Referrer-Policy: same-origin');
 header('X-Frame-Options: DENY');
@@ -242,6 +242,8 @@ try {
                         respond(200, ['ok' => Owner::deleteClosure($id)]);
                     case 'GET owner/stats':
                         respond(200, Owner::stats(max(7, min(365, (int) q('days', '30')))));
+                    case 'GET owner/health':
+                        respond(200, Owner::health());
                     case 'GET owner/export':
                         respond(200, null, Owner::csv(), 'text/csv; charset=utf-8', 'plaza-city-apartados-' . Time::today() . '.csv');
                 }

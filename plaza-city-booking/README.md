@@ -11,6 +11,7 @@ liberación por no presentarse, recordatorios y bajas por fin de contrato son
 automáticos. El dueño solo genera links de invitación y, si quiere, marca días
 de cierre.
 
+- **Instalación en SiteGround (hosting de plazacity.net), paso a paso: [`docs/SITEGROUND.md`](docs/SITEGROUND.md)**
 - Investigación previa y benchmark (Skedda, Robin, Envoy, OfficeRnD, YAROOMS): [`docs/RESEARCH.md`](docs/RESEARCH.md)
 
 ## Contenido
@@ -36,6 +37,8 @@ hosting PHP básico y se usa un subdominio, por ejemplo `booking.plazacity.net`,
 con un enlace desde el sitio. La app funciona igual.
 
 ## Instalar en plazacity.net/booking (10 minutos)
+
+> plazacity.net está en **SiteGround**: sigue [`docs/SITEGROUND.md`](docs/SITEGROUND.md), que tiene los menús exactos de Site Tools. Los pasos de abajo son la versión genérica para cPanel.
 
 1. **Sube la carpeta.** En cPanel abre *File Manager* → `public_html`. Sube el
    archivo `booking.zip` y usa *Extract*. Debe quedar `public_html/booking/index.html`.
@@ -79,6 +82,8 @@ Se entra con la llave de administración. No requiere cuenta de inquilino.
   y cada afectado recibe una notificación.
 - **Uso.** Ocupación por espacio, no-shows, cancelaciones y horas por empresa de
   los últimos 30 días, y descarga de todos los apartados en CSV para Excel.
+  Al final, **Estado del sistema** comprueba https, notificaciones, que el cron
+  esté corriendo y que la base de datos no se pueda descargar desde internet.
 
 Cuando vence el fin de contrato de un inquilino, su cuenta se desactiva sola.
 
@@ -127,8 +132,9 @@ agregan desde **Administración → Cierres** como "uso libre".
 - Protección CSRF: toda escritura exige un encabezado que un formulario de otro sitio no puede enviar.
 - Límite de intentos para login, registro, restablecer contraseña y llave de administración.
 - Links de invitación y de contraseña aleatorios, con caducidad y usos limitados.
-- `app/` y la base de datos están bloqueados por `.htaccess`; la base además tiene nombre aleatorio. Si tu hosting lo permite, mueve el archivo fuera de `public_html` y actualiza `db_path` en `app/config.php`.
-- Encabezados de seguridad (CSP, X-Frame-Options, nosniff) y consultas SQL siempre parametrizadas.
+- La base de datos tiene nombre aleatorio, permisos que solo dejan leerla a PHP y está bloqueada por `.htaccess`. El panel verifica con una descarga real que no sea accesible. Si tu hosting lo permite, también puedes moverla fuera de `public_html` y actualizar `db_path` en `app/config.php`.
+- Todas las respuestas de la API llevan `Cache-Control: private, no-cache, no-store`, así que ninguna caché del hosting (como la Dynamic Cache de SiteGround) puede mostrar datos de un inquilino a otro.
+- Política de seguridad de contenido (CSP) en el HTML y en `.htaccess`, protección contra incrustación en otros sitios, y consultas SQL siempre parametrizadas.
 
 ## Actualizar la app
 
@@ -157,7 +163,7 @@ Para reinstalar en local borra `booking/app/config.php` y el `.sqlite` de `booki
 ```
 booking/
   index.html, css/, js/, icons/   interfaz (PWA)
-  sw.js, manifest.webmanifest     notificaciones y modo app
+  sw.js, manifest.json            notificaciones y modo app
   api.php                         API: api.php?r=<ruta>
   cron.php                        mantenimiento automático
   install.php                     instalador de un solo uso

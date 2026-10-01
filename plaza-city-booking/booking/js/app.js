@@ -507,7 +507,21 @@ async function adminStats($p) {
     <div class="tablewrap" style="margin-top:12px"><table class="overview"><thead><tr><th>${t('sta.space')}</th><th>${t('sta.hours')}</th><th>${t('sta.occ')}</th><th>${t('sta.noShows')}</th><th>${t('sta.cancelled')}</th></tr></thead>
     <tbody>${s.spaces.map((x) => `<tr><td>${spaceName(x.id)}</td><td>${x.hours} / ${x.available_hours}</td><td>${Math.round(x.occupancy * 100)}%<div class="bar"><i style="width:${Math.round(x.occupancy * 100)}%"></i></div></td><td>${x.no_shows}</td><td>${x.cancelled}</td></tr>`).join('')}</tbody></table></div></div>
     <div class="card"><h2>${t('sta.byCompany')}</h2><div class="list">${s.companies.map((c) => `<div class="item row between"><span>${esc(c.company)}</span><b>${c.hours} h</b></div>`).join('') || '<p class="muted">—</p>'}</div></div>
-    <div class="card"><button class="btn" id="csv">${t('sta.export')}</button></div>`;
+    <div class="card"><button class="btn" id="csv">${t('sta.export')}</button></div>
+    <div class="card"><h2>${t('hlt.title')}</h2><div class="list" id="health">${t('common.loading')}</div></div>`;
+  api.get('owner/health', ownerH()).then((h) => {
+    const mins = (s) => (s === null ? '—' : s < 120 ? `${s} s` : `${Math.round(s / 60)} min`);
+    const row = (ok, label, detail) => `<div class="item row between"><span>${label}${detail ? `<div class="small muted">${detail}</div>` : ''}</span><span class="chip ${ok === true ? 'free' : ok === false ? 'busy' : 'past'}">${ok === true ? 'OK' : ok === false ? t('hlt.fix') : '?'}</span></div>`;
+    const cronOk = h.last_cron_seconds !== null && h.last_cron_seconds < 15 * 60;
+    $p.querySelector('#health').innerHTML = [
+      row(h.https, t('hlt.https'), h.https ? '' : t('hlt.httpsFix')),
+      row(h.push, t('hlt.push')),
+      row(cronOk, t('hlt.cron'), h.last_cron_seconds === null ? t('hlt.cronNever') : t('hlt.cronAgo', { t: mins(h.last_cron_seconds) })),
+      row(h.db_exposed === null ? null : !h.db_exposed, t('hlt.db'), h.db_exposed ? t('hlt.dbFix') : h.db_exposed === null ? t('hlt.dbUnknown') : h.db_inside_web ? t('hlt.dbInside') : t('hlt.dbOutside')),
+      row(h.outbox_pending < 50, t('hlt.outbox'), String(h.outbox_pending)),
+      `<div class="small muted">v${esc(h.version)} · PHP ${esc(h.php)} · SQLite ${esc(h.sqlite)} · ${h.db_size_kb ?? '—'} KB</div>`,
+    ].join('');
+  }).catch((err) => { $p.querySelector('#health').textContent = errorMsg(err); });
   $p.querySelector('#csv').onclick = async () => {
     try {
       const blob = await api.get('owner/export', ownerH());
@@ -559,6 +573,7 @@ async function refreshConfig() {
   }
 }
 (async function boot() {
+  if (window.top !== window.self) { document.body.innerHTML = ''; return; } // no permitir que otro sitio la incruste
   initLang();
   if ('serviceWorker' in navigator && window.isSecureContext) navigator.serviceWorker.register('sw.js', { scope: './' }).catch(() => {});
   try { await refreshConfig(); } catch (err) {

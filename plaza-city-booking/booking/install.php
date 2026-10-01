@@ -50,13 +50,14 @@ function install(string $ownerKey, string $baseUrl, string $email, ?string $dbPa
         'rules' => Config::defaults()['rules'],
     ];
     Config::set($cfg);
+    @chmod(dirname($cfg['db_path']), 0700);
     Db::connect($cfg['db_path']);
     $php = "<?php\n// Generado por install.php el " . gmdate('Y-m-d H:i') . " UTC. NO compartir: contiene secretos.\n"
         . "// Puedes ajustar 'rules'. Ver config.sample.php.\nreturn " . var_export($cfg, true) . ";\n";
     if (file_put_contents(Config::file(), $php, LOCK_EX) === false) {
         throw new RuntimeException('No se pudo escribir app/config.php. Revisa permisos.');
     }
-    @chmod(Config::file(), 0640);
+    @chmod(Config::file(), 0600);
     return $cfg;
 }
 
@@ -74,7 +75,7 @@ if (PHP_SAPI === 'cli') {
 
 header('Content-Type: text/html; charset=utf-8');
 header('X-Frame-Options: DENY');
-header('Cache-Control: no-store');
+header('Cache-Control: private, no-cache, no-store, must-revalidate');
 $h = fn ($s) => htmlspecialchars((string) $s, ENT_QUOTES, 'UTF-8');
 $scheme = Auth::isHttps() ? 'https' : 'http';
 $guessUrl = $scheme . '://' . ($_SERVER['HTTP_HOST'] ?? 'plazacity.net') . rtrim(dirname($_SERVER['SCRIPT_NAME'] ?? '/booking/install.php'), '/');
@@ -92,6 +93,7 @@ if (Config::installed()) {
         }
         $cfg = install((string) ($_POST['owner_key'] ?? ''), (string) ($_POST['base_url'] ?? ''), (string) ($_POST['email'] ?? ''), null);
         $done = $cfg;
+        $exposed = Owner::dbExposed();
     } catch (Throwable $e) {
         $error = $e->getMessage();
     }
@@ -109,8 +111,10 @@ if (Config::installed()) {
 <?php elseif (is_array($done)): ?>
   <div class="card"><h1>Instalación completa</h1>
   <div class="success">Llaves de notificaciones generadas y base de datos creada.</div>
+  <?php if (($exposed ?? null) === true): ?><div class="error"><b>Atención:</b> el archivo de la base de datos se puede descargar desde internet en este servidor. Muévelo fuera de <code>public_html</code> y cambia <code>db_path</code> en <code>app/config.php</code> (ver la guía). En SiteGround: Site Tools → Speed → Caching → apaga "NGINX Direct Delivery" o mueve el archivo.</div>
+  <?php elseif (($exposed ?? null) === false): ?><div class="success">Verificado: la base de datos no se puede descargar desde internet.</div><?php endif; ?>
   <ol class="stack">
-    <li><b>Configura el cron</b> (cPanel → Cron Jobs, cada minuto):<br><code>php <?= $h(__DIR__) ?>/cron.php &gt;/dev/null 2&gt;&amp;1</code><br>
+    <li><b>Configura el cron</b> (SiteGround: Site Tools → Devs → Cron Jobs, cada 5 minutos · cPanel: Cron Jobs):<br><code>php <?= $h(__DIR__) ?>/cron.php &gt;/dev/null 2&gt;&amp;1</code><br>
       Si tu hosting no tiene cron, usa un servicio externo con esta URL:<br><code><?= $h($done['base_url']) ?>/cron.php?token=<?= $h($done['cron_token']) ?></code></li>
     <li><b>Genera la primera invitación</b> en <a href="./#/admin">Administración</a> con la llave que acabas de crear.</li>
     <li><b>Borra <code>install.php</code></b> del servidor (ya no se puede volver a ejecutar, pero no hace falta dejarlo).</li>
@@ -123,8 +127,8 @@ if (Config::installed()) {
   <div class="list"><?php foreach ($checks as $label => $ok): ?>
     <div class="item"><span class="chip <?= $ok ? 'free' : 'busy' ?>"><?= $ok ? 'OK' : 'FALTA' ?></span> <?= $h($label) ?></div>
   <?php endforeach; ?></div>
-  <?php if (!$allOk): ?><div class="error">Pide a tu proveedor de hosting que active lo que falta (o cambia la versión de PHP a 8.1+ en cPanel → "Select PHP Version").</div><?php endif; ?>
-  <?php if (!Auth::isHttps()): ?><div class="notice">Estás entrando por <b>http</b>. Activa el certificado SSL gratuito (cPanel → SSL/TLS Status → AutoSSL) y entra por <b>https</b>: las notificaciones push y el modo app solo funcionan con https.</div><?php endif; ?>
+  <?php if (!$allOk): ?><div class="error">Pide a tu proveedor de hosting que active lo que falta (o cambia la versión de PHP a 8.2+ en SiteGround: Site Tools → Devs → PHP Manager · en cPanel: "Select PHP Version").</div><?php endif; ?>
+  <?php if (!Auth::isHttps()): ?><div class="notice">Estás entrando por <b>http</b>. Activa el certificado SSL gratuito (SiteGround: Site Tools → Security → SSL Manager y luego HTTPS Enforce · cPanel: SSL/TLS Status → AutoSSL) y entra por <b>https</b>: las notificaciones push y el modo app solo funcionan con https.</div><?php endif; ?>
   <?php if ($error): ?><div class="error"><?= $h($error) ?></div><?php endif; ?>
   <form method="post" style="margin-top:14px">
     <label class="field"><span>URL pública de esta carpeta</span><input name="base_url" value="<?= $h($_POST['base_url'] ?? $guessUrl) ?>" required></label>
