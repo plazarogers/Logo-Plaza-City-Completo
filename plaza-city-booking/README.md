@@ -40,10 +40,11 @@ con un enlace desde el sitio. La app funciona igual.
 
 > plazacity.net está en **SiteGround**: sigue [`docs/SITEGROUND.md`](docs/SITEGROUND.md), que tiene los menús exactos de Site Tools. Los pasos de abajo son la versión genérica para cPanel.
 
-1. **Sube la carpeta.** En cPanel abre *File Manager* → `public_html`. Sube el
-   archivo `booking.zip` y usa *Extract*. Debe quedar `public_html/booking/index.html`.
-   (Para crear el zip: `zip -r booking.zip booking` dentro de esta carpeta, o
-   descarga el repositorio desde GitHub y comprime la carpeta `booking`.)
+1. **Sube la carpeta.** El zip contiene directamente los archivos, sin carpeta interior.
+   En cPanel crea la carpeta `public_html/booking`, sube ahí `booking.zip` y usa *Extract*.
+   En SiteGround no la crees: sube el zip a `public_html` y su *Extract* crea `booking` solo.
+   Debe quedar `public_html/booking/index.html`.
+   Para crear el zip: `cd booking && zip -r ../booking.zip .`
 2. **Versión de PHP.** cPanel → *Select PHP Version* (o *MultiPHP Manager*) → 8.2 o superior.
 3. **SSL.** cPanel → *SSL/TLS Status* → *Run AutoSSL*. Verifica que `https://plazacity.net` abra con candado.
 4. **Instalador.** Abre `https://plazacity.net/booking/install.php`. Revisa que

@@ -27,8 +27,10 @@ Para entrar: siteground.com → Login → *Websites* → `plazacity.net` → **S
 
 1. Abre `public_html` (es la carpeta de plazacity.net).
 2. Pulsa **Upload** (ícono de flecha hacia arriba) → *File Upload* → elige `booking.zip`.
-3. Clic derecho sobre `booking.zip` → **Extract** → confirma en `public_html`.
-4. Comprueba que existe `public_html/booking/index.html`. Borra `booking.zip`.
+3. Clic derecho sobre `booking.zip` → **Extract** → deja la ruta que propone y confirma.
+   SiteGround crea sola la carpeta `booking`, con el nombre del zip. No la crees antes.
+4. Comprueba que existe `public_html/booking/index.html`, directamente y no en `booking/booking`.
+5. Con "Show hidden files" activo, comprueba que hay un `.htaccess` en `booking`, en `booking/app` y en `booking/app/data`. Borra `booking.zip`.
 
 Si plazacity.net fuera WordPress, la carpeta funciona igual: WordPress no toca carpetas reales.
 
@@ -97,7 +99,8 @@ Agrega en plazacity.net un botón o enlace "Reservar áreas comunes" hacia `http
 
 ## Actualizar la app
 
-1. Sube el nuevo `booking.zip` a `public_html` y extráelo encima, aceptando sobrescribir.
+1. Sube el nuevo `booking.zip` a `public_html` y extráelo ahí, aceptando sobrescribir.
    El zip nunca trae `app/config.php` ni la base de datos, así que tus datos y llaves no se tocan.
+   Comprueba que no se haya creado una carpeta duplicada, como `booking/booking` o `booking (1)`. Si pasa, no borres nada y pide ayuda.
 2. Borra `install.php` otra vez.
 3. *Speed → Caching → Flush Cache*.
