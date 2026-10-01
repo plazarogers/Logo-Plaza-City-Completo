@@ -137,8 +137,8 @@ final class WebPush
                     'headers' => [
                         'Content-Type: application/octet-stream',
                         'Content-Encoding: aes128gcm',
-                        'TTL: ' . $ttl,
-                        'Urgency: normal',
+                        'TTL: ' . ($m['ttl'] ?? $ttl),
+                        'Urgency: ' . ($m['urgency'] ?? 'normal'),
                         'Authorization: ' . self::vapidAuthorization($m['endpoint'], $vapid),
                         'Content-Length: ' . strlen($body),
                     ],

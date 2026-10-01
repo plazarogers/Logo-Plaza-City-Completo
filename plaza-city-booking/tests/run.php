@@ -311,6 +311,98 @@ test('estadísticas y exportación CSV', function () {
     eq(str_contains(Owner::csv(), "'=HYPERLINK"), true, 'fórmula neutralizada');
 });
 
+// ---------- Solicitudes de espacio ----------
+function checkedInBooking(array $u): array
+{
+    // Apartado de 9 a 11 con check-in hecho a las 8:50.
+    $b = Bookings::create($u, 'conference', '2026-10-06', 9, 11);
+    at('2026-10-06 08:50');
+    Bookings::checkIn((int) $u['id'], (int) $b['id']);
+    return $b;
+}
+test('solicitud: no antes de los 15 min de gracia, no a uno mismo, sí después', function () {
+    $ana = user('ana@x.com'); $beto = user('beto@x.com');
+    $b = checkedInBooking($ana);
+    at('2026-10-06 09:10');
+    throwsCode(fn () => Requests::create($beto, (int) $b['id']), 'request_too_early');
+    at('2026-10-06 09:20');
+    throwsCode(fn () => Requests::create($ana, (int) $b['id']), 'request_own');
+    subscribe((int) $ana['id']);
+    Db::run('DELETE FROM push_outbox');
+    $r = Requests::create($beto, (int) $b['id']);
+    eq($r['status'], 'pending');
+    eq($r['seconds_left'], 180, '3 minutos para responder');
+    $push = json_decode(Db::value('SELECT payload FROM push_outbox WHERE user_id = ?', [$ana['id']]), true);
+    eq($push['requireInteraction'], true, 'push urgente');
+    eq(count($push['actions']), 2, 'botones Liberar / Lo estoy usando');
+    eq($push['_ttl'], 180);
+});
+test('solicitud: el dueño libera, las horas restantes quedan con prioridad para quien pidió', function () {
+    $ana = user('ana@x.com'); $beto = user('beto@x.com'); $carla = user('carla@x.com');
+    $b = checkedInBooking($ana);
+    at('2026-10-06 09:30');
+    $r = Requests::create($beto, (int) $b['id']);
+    throwsCode(fn () => Requests::create($carla, (int) $b['id']), 'request_pending');
+    throwsCode(fn () => Requests::respond((int) $beto['id'], (int) $r['id'], 'release'), 'not_found');
+    eq(Requests::respond((int) $ana['id'], (int) $r['id'], 'release')['status'], 'released');
+    $row = Db::one('SELECT status, released_reason FROM bookings WHERE id = ?', [$b['id']]);
+    eq([$row['status'], $row['released_reason']], ['released', 'request']);
+    eq((int) Db::value('SELECT COUNT(*) FROM booking_slots'), 0, 'se liberan la hora en curso y la siguiente');
+    throwsCode(fn () => Bookings::create($carla, 'conference', '2026-10-06', 9, 10), 'held_for_requester');
+    eq(Bookings::create($beto, 'conference', '2026-10-06', 9, 11)['status'], 'active', 'quien pidió puede apartar');
+    eq(Bookings::activity()[1]['type'], 'request_released');
+});
+test('solicitud: sin respuesta en 3 minutos se libera sola y se avisa a ambos', function () {
+    $ana = user('ana@x.com'); $beto = user('beto@x.com');
+    subscribe((int) $ana['id']); subscribe((int) $beto['id']);
+    $b = checkedInBooking($ana);
+    at('2026-10-06 09:40');
+    $r = Requests::create($beto, (int) $b['id']);
+    at('2026-10-06 09:42:59');
+    eq(Requests::expireDue(), 0, 'aún dentro de los 3 minutos');
+    at('2026-10-06 09:43:01');
+    Db::run('DELETE FROM push_outbox');
+    eq(Requests::forUser((int) $r['id'], (int) $beto['id'])['status'], 'expired');
+    eq(Db::value('SELECT released_reason FROM bookings WHERE id = ?', [$b['id']]), 'request_timeout');
+    eq((int) Db::value('SELECT COUNT(*) FROM push_outbox WHERE user_id = ?', [$beto['id']]), 1, 'aviso a quien pidió');
+    eq((int) Db::value('SELECT COUNT(*) FROM push_outbox WHERE user_id = ?', [$ana['id']]), 1, 'aviso al dueño');
+    throwsCode(fn () => Requests::respond((int) $ana['id'], (int) $r['id'], 'keep'), 'request_closed');
+});
+test('solicitud: "lo estoy usando" mantiene el apartado y no se puede volver a pedir', function () {
+    $ana = user('ana@x.com'); $beto = user('beto@x.com'); $carla = user('carla@x.com');
+    $b = checkedInBooking($ana);
+    at('2026-10-06 09:20');
+    $r = Requests::create($beto, (int) $b['id']);
+    eq(Requests::respond((int) $ana['id'], (int) $r['id'], 'keep')['status'], 'declined');
+    eq(Db::value('SELECT status FROM bookings WHERE id = ?', [$b['id']]), 'active');
+    throwsCode(fn () => Requests::create($beto, (int) $b['id']), 'request_already');
+    eq(Requests::create($carla, (int) $b['id'])['status'], 'pending', 'otra persona sí puede pedir');
+});
+test('solicitud: la prioridad vence a los 5 minutos', function () {
+    $ana = user('ana@x.com'); $beto = user('beto@x.com'); $carla = user('carla@x.com');
+    $b = checkedInBooking($ana);
+    at('2026-10-06 09:20');
+    $r = Requests::create($beto, (int) $b['id']);
+    Requests::respond((int) $ana['id'], (int) $r['id'], 'release');
+    at('2026-10-06 09:25:30');
+    eq(Bookings::create($carla, 'conference', '2026-10-06', 9, 10)['status'], 'active');
+});
+test('solicitud: el calendario indica cuándo se puede pedir y la prioridad', function () {
+    $ana = user('ana@x.com'); $beto = user('beto@x.com');
+    $b = checkedInBooking($ana);
+    at('2026-10-06 09:05');
+    eq(Bookings::dayView('conference', '2026-10-06', (int) $beto['id'])['hours'][1]['booking']['requestable'], false);
+    at('2026-10-06 09:16');
+    $v = Bookings::dayView('conference', '2026-10-06', (int) $beto['id']);
+    eq($v['hours'][1]['booking']['requestable'], true);
+    eq(Bookings::dayView('conference', '2026-10-06', (int) $ana['id'])['hours'][1]['booking']['requestable'], false, 'el dueño no ve el botón');
+    $r = Requests::create($beto, (int) $b['id']);
+    Requests::respond((int) $ana['id'], (int) $r['id'], 'release');
+    $v = Bookings::dayView('conference', '2026-10-06', (int) $beto['id']);
+    eq($v['hours'][1]['hold']['mine'], true);
+    eq(Bookings::dayView('conference', '2026-10-06', (int) $ana['id'])['hours'][1]['hold']['name'], 'Beto');
+});
+
 // ---------- Web Push ----------
 test('Web Push: cifrado aes128gcm descifrable por el receptor (RFC 8291)', function () {
     $ua = openssl_pkey_new(['curve_name' => 'prime256v1', 'private_key_type' => OPENSSL_KEYTYPE_EC]);

@@ -74,12 +74,13 @@ try {
     }
     Db::pdo();
     Bookings::maybeMaintenance();
+    Requests::expireDue();
     $user = Auth::user();
     if ($user && !$headerLang) {
         Msg::$lang = $user['lang'];
     }
     $id = 0;
-    if (preg_match('#^(bookings|owner/invites|owner/users|owner/closures)/(\d+)(/.*)?$#', $route, $m)) {
+    if (preg_match('#^(bookings|requests|owner/invites|owner/users|owner/closures)/(\d+)(/.*)?$#', $route, $m)) {
         $id = (int) $m[2];
         $route = $m[1] . '/:id' . ($m[3] ?? '');
     }
@@ -98,6 +99,7 @@ try {
                 'now' => Time::now()->format(DATE_ATOM),
                 'user' => $user ? Auth::publicUser($user) : null,
                 'pushSubscribed' => $user ? Push::hasSubscription((int) $user['id']) : false,
+                'pendingRequests' => $user ? Requests::pendingForHolder((int) $user['id']) : [],
             ]);
         case 'GET invite':
             $inv = Invites::findByToken(q('token'));
@@ -183,6 +185,18 @@ try {
                 throw new AppError('not_found', 404);
             }
             respond(200, null, Bookings::ics($b), 'text/calendar; charset=utf-8', 'plaza-city-' . $b['space_id'] . '-' . $b['date'] . '.ics');
+        case 'POST bookings/:id/request':
+            $u = Auth::requireUser();
+            respond(201, ['request' => Requests::create($u, $id)]);
+        case 'GET requests/:id':
+            $u = Auth::requireUser();
+            respond(200, ['request' => Requests::forUser($id, (int) $u['id'])]);
+        case 'POST requests/:id/release':
+            $u = Auth::requireUser();
+            respond(200, ['request' => Requests::respond((int) $u['id'], $id, 'release')]);
+        case 'POST requests/:id/keep':
+            $u = Auth::requireUser();
+            respond(200, ['request' => Requests::respond((int) $u['id'], $id, 'keep')]);
         case 'GET activity':
             Auth::requireUser();
             $before = (int) q('before', '0');

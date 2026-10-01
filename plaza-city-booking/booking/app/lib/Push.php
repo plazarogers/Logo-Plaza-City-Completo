@@ -106,7 +106,12 @@ final class Push
         $map = [];
         foreach ($rows as $row) {
             foreach (Db::all('SELECT * FROM push_subscriptions WHERE user_id = ?', [$row['user_id']]) as $s) {
-                $messages[] = ['endpoint' => $s['endpoint'], 'p256dh' => $s['p256dh'], 'auth' => $s['auth'], 'payload' => $row['payload']];
+                $data = json_decode($row['payload'], true) ?: [];
+                $ttl = isset($data['_ttl']) ? max(30, (int) $data['_ttl']) : null;
+                $urgency = $data['_urgency'] ?? null;
+                unset($data['_ttl'], $data['_urgency']);
+                $messages[] = ['endpoint' => $s['endpoint'], 'p256dh' => $s['p256dh'], 'auth' => $s['auth'],
+                    'payload' => json_encode($data, JSON_UNESCAPED_UNICODE), 'ttl' => $ttl, 'urgency' => $urgency];
                 $map[] = [$row['id'], $s['endpoint']];
             }
         }

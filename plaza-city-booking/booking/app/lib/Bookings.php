@@ -57,6 +57,10 @@ final class Bookings
         }
         $userId = (int) $user['id'];
         $note = mb_substr(trim($note), 0, 120);
+        Requests::expireDue();
+        if ($h = Requests::holdBlocking($spaceId, $date, $start, $end, $userId)) {
+            throw new AppError('held_for_requester', 409, ['name' => $h['requester_name'], 'time' => Time::fromIso($h['hold_until'])->format('H:i')]);
+        }
 
         $id = Db::tx(function () use ($userId, $spaceId, $date, $start, $end, $startDt, $endDt, $now, $note) {
             $used = (int) Db::value(
@@ -227,6 +231,7 @@ final class Bookings
             $out['released']++;
         }
 
+        Requests::expireDue();
         $out['completed'] = Db::run("UPDATE bookings SET status = 'completed', updated_at = ? WHERE status = 'active' AND end_at <= ?", [$nowIso, $nowIso])->rowCount();
 
         foreach (Db::all('SELECT id FROM users WHERE disabled_at IS NULL AND access_until IS NOT NULL AND access_until < ?', [Time::today()]) as $u) {
@@ -286,7 +291,7 @@ final class Bookings
             $to = Time::iso(Time::slot(Time::addDays($date, 1), 0));
             $occupied = [];
             foreach (Db::all(
-                'SELECT s.slot_start, b.id, b.user_id, b.status, b.checked_in_at, b.start_hour, b.end_hour, b.note, u.name, u.company
+                'SELECT s.slot_start, b.id, b.user_id, b.status, b.checked_in_at, b.start_hour, b.end_hour, b.note, b.start_at, b.end_at, u.name, u.company
                  FROM booking_slots s JOIN bookings b ON b.id = s.booking_id JOIN users u ON u.id = b.user_id
                  WHERE s.space_id = ? AND s.slot_start >= ? AND s.slot_start < ?',
                 [$spaceId, $from, $to]
@@ -295,9 +300,28 @@ final class Bookings
             }
             $now = Time::now();
             $hourStart = $now->setTime((int) $now->format('H'), 0, 0);
+            $holds = Requests::holds($spaceId, $date);
+            $reqInfo = [];
+            foreach ($occupied as $r) {
+                $bid = (int) $r['id'];
+                if (isset($reqInfo[$bid])) {
+                    continue;
+                }
+                $mine = Db::one('SELECT id, status FROM space_requests WHERE booking_id = ? AND requester_id = ? ORDER BY id DESC LIMIT 1', [$bid, $viewerId]);
+                $reqInfo[$bid] = [
+                    'requestable' => Requests::eligibility(['id' => $bid, 'user_id' => $r['user_id'], 'status' => $r['status'], 'start_at' => $r['start_at'], 'end_at' => $r['end_at']], $viewerId) === null,
+                    'my_request' => $mine ? ['id' => (int) $mine['id'], 'status' => $mine['status']] : null,
+                ];
+            }
             foreach ($status['hours'] as $h) {
                 $st = Time::slot($date, $h['hour']);
                 $r = $occupied[Time::iso($st)] ?? null;
+                $hold = null;
+                foreach ($holds as $hd) {
+                    if ($h['hour'] >= (int) $hd['from_hour'] && $h['hour'] < (int) $hd['to_hour']) {
+                        $hold = ['mine' => (int) $hd['requester_id'] === $viewerId, 'name' => $hd['requester_name'], 'until' => Time::fromIso($hd['hold_until'])->format('H:i')];
+                    }
+                }
                 $hours[] = [
                     'hour' => $h['hour'],
                     'kind' => $h['kind'],
@@ -306,7 +330,8 @@ final class Bookings
                         'id' => (int) $r['id'], 'mine' => (int) $r['user_id'] === $viewerId, 'user_name' => $r['name'],
                         'user_company' => $r['company'], 'status' => $r['status'], 'checked_in' => (bool) $r['checked_in_at'],
                         'start_hour' => (int) $r['start_hour'], 'end_hour' => (int) $r['end_hour'], 'note' => $r['note'],
-                    ] : null,
+                    ] + $reqInfo[(int) $r['id']] : null,
+                    'hold' => $r ? null : $hold,
                 ];
             }
         }

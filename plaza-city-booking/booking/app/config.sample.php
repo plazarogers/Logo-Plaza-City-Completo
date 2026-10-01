@@ -34,5 +34,7 @@ return [
         'cancel_lock_in_minutes' => 0,
         'invite_default_days' => 7,
         'session_days' => 30,
+                'request_response_minutes' => 3,  // tiempo para responder una solicitud de espacio
+                'request_hold_minutes' => 5,      // prioridad de quien pidió para apartar
     ],
 ];

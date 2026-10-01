@@ -80,7 +80,12 @@ function renderChrome(path) {
   $topUser.innerHTML = `<div>${esc(state.user.name)}</div><div class="small" style="opacity:.75">${esc(state.user.company || state.user.suite || '')}</div>`;
 }
 function renderBanner() {
-  $banner.innerHTML = navigator.onLine === false ? `<div class="banner">${t('common.offline')}</div>` : '';
+  const off = navigator.onLine === false ? `<div class="banner">${t('common.offline')}</div>` : '';
+  const { path } = parseHash();
+  const reqs = state.user && path !== '/solicitud' ? (state.config?.pendingRequests || []) : [];
+  $banner.innerHTML = off + reqs.map((r) => `<a class="reqbanner" href="#/solicitud?id=${r.id}">
+      <b>${t('req.bannerTitle', { who: esc(r.requester_name), space: spaceName(r.space_id) })}</b>
+      <span>${t('req.bannerAction')} ›</span></a>`).join('');
 }
 window.addEventListener('online', renderBanner);
 window.addEventListener('offline', renderBanner);
@@ -89,6 +94,7 @@ window.addEventListener('offline', renderBanner);
 async function route() {
   const { path, q } = parseHash();
   $app.style.paddingBottom = '';
+  stopRequestPoll();
   renderChrome(path);
   renderBanner();
   window.scrollTo(0, 0);
@@ -97,6 +103,7 @@ async function route() {
     if (path === '/restablecer') return viewReset(q.get('token') || '');
     if (path === '/admin') return await viewAdmin(q.get('tab') || 'inv');
     if (!state.user) return viewLogin();
+    if (path === '/solicitud') return await viewRequest(Number(q.get('id')));
     if (path === '/calendario') return await viewCalendar(q);
     if (path === '/mis-apartados') return await viewMine();
     if (path === '/actividad') return await viewActivity();
@@ -256,15 +263,110 @@ function renderDay() {
     $day.innerHTML = head + `<div class="freeuse">${d.freeUse ? `<div class="chip free">${t('home.freeUse')}</div><div class="big">${t('cal.freeUseTitle')}</div>` : `<div class="chip past">${t('home.closed')}</div>`}<p class="muted">${msg}</p></div>`;
     renderConfirm(); return;
   }
-  $day.innerHTML = head + `<p class="muted small">${t('cal.tapHours', { max: state.config.rules.max_hours_per_booking })}</p><div class="hours">` + d.hours.map((h) => {
+  const myHold = d.hours.find((h) => h.hold && h.hold.mine);
+  $day.innerHTML = head + (myHold ? `<div class="success small">${t('req.holdMine', { time: myHold.hold.until })}</div>` : '') + requestPanel(d)
+    + `<p class="muted small">${t('cal.tapHours', { max: state.config.rules.max_hours_per_booking })}</p><div class="hours">` + d.hours.map((h) => {
     const b = h.booking;
-    const cls = b ? (b.mine ? 'mine' : 'busy') : h.past ? 'past' : 'free';
-    const who = b ? `${esc(b.user_name)}${b.user_company ? ' · ' + esc(b.user_company) : ''}${b.note ? ' — ' + esc(b.note) : ''}` : h.past ? t('cal.past') : t('cal.free');
+    const heldOther = !b && h.hold && !h.hold.mine;
+    const cls = b ? (b.mine ? 'mine' : 'busy') : heldOther ? 'busy' : h.past ? 'past' : 'free';
+    const who = b ? `${esc(b.user_name)}${b.user_company ? ' · ' + esc(b.user_company) : ''}${b.note ? ' — ' + esc(b.note) : ''}`
+      : heldOther ? t('req.heldFor', { name: esc(h.hold.name), time: h.hold.until })
+      : h.hold && h.hold.mine ? t('req.heldForYou', { time: h.hold.until })
+      : h.past ? t('cal.past') : t('cal.free');
     const tag = b && b.checked_in ? `<span class="chip info">${t('cal.checkedIn')}</span>` : h.kind === 'special' ? `<span class="kind" title="${t('cal.special')}">${t('cal.specialShort')}</span>` : '';
     return `<button class="hour ${cls} ${cal.sel.includes(h.hour) ? 'selected' : ''}" data-hour="${h.hour}" ${cls !== 'free' ? 'disabled' : ''} aria-pressed="${cal.sel.includes(h.hour)}"><span class="t">${hh(h.hour)}</span><span class="who">${who}</span>${tag}</button>`;
   }).join('') + '</div>';
   $day.querySelectorAll('.hour.free').forEach((el) => { el.onclick = () => toggleHour(Number(el.dataset.hour)); });
+  bindRequestPanel($day);
   renderConfirm();
+}
+
+// ---------- solicitudes de espacio (quien pide) ----------
+let reqPoll = null;
+let reqTick = null;
+function stopRequestPoll() { clearInterval(reqPoll); clearInterval(reqTick); reqPoll = reqTick = null; }
+const mmss = (s) => `${Math.floor(s / 60)}:${String(Math.max(0, s) % 60).padStart(2, '0')}`;
+function requestPanel(d) {
+  if (d.date !== state.config.today) return '';
+  const h = d.hours.find((x) => x.booking && !x.booking.mine && (x.booking.requestable || x.booking.my_request));
+  if (!h) return '';
+  const b = h.booking;
+  const name = esc(b.user_name);
+  const mins = state.config.rules.request_response_minutes;
+  if (b.my_request && b.my_request.status === 'pending') {
+    return `<div class="reqpanel" data-req="${b.my_request.id}"><b>${t('req.waitingTitle', { name })}</b>
+      <p class="small">${t('req.waitingText', { mins })}</p><div class="countdown" aria-live="polite">…</div></div>`;
+  }
+  if (b.my_request && b.my_request.status === 'declined') {
+    return `<div class="reqpanel done"><b>${t('req.declinedTitle', { name })}</b><p class="small">${t('req.declinedText')}</p></div>`;
+  }
+  if (b.requestable) {
+    return `<div class="reqpanel"><b>${t('req.askTitle', { space: spaceName(cal.space) })}</b>
+      <p class="small">${t('req.askText', { name, mins, hold: state.config.rules.request_hold_minutes })}</p>
+      <button class="btn primary" id="askBtn" data-booking="${b.id}">${t('req.askBtn')}</button></div>`;
+  }
+  return '';
+}
+function bindRequestPanel(root) {
+  root.querySelector('#askBtn')?.addEventListener('click', async (e) => {
+    const btn = e.currentTarget; btn.disabled = true;
+    try {
+      const r = await api.post(`bookings/${btn.dataset.booking}/request`);
+      toast(t('req.sent', { name: r.request.holder_name }));
+      await loadWeek();
+    } catch (err) { toast(errorMsg(err)); btn.disabled = false; }
+  });
+  const panel = root.querySelector('.reqpanel[data-req]');
+  if (panel && !reqPoll) watchRequest(Number(panel.dataset.req), () => loadWeek());
+}
+function watchRequest(id, onChange) {
+  stopRequestPoll();
+  let left = null;
+  const paint = () => { const el = document.querySelector(`[data-req="${id}"] .countdown`); if (el && left !== null) el.textContent = t('req.countdown', { t: mmss(left) }); };
+  const check = async () => {
+    try {
+      const { request } = await api.get(`requests/${id}`);
+      if (request.status !== 'pending') {
+        stopRequestPoll();
+        if (request.role === 'requester') toast(request.status === 'declined' ? t('req.declinedToast', { name: request.holder_name }) : t('req.grantedToast'));
+        onChange(request);
+        return;
+      }
+      left = request.seconds_left; paint();
+    } catch { /* sin conexión: se reintenta */ }
+  };
+  reqPoll = setInterval(check, 4000);
+  reqTick = setInterval(() => { if (left !== null && left > 0) { left -= 1; paint(); if (left === 0) check(); } }, 1000);
+  check();
+}
+
+// ---------- solicitudes de espacio (quien apartó) ----------
+async function viewRequest(id) {
+  $app.innerHTML = `<h1>${t('req.title')}</h1><div id="reqbox" class="card">${t('common.loading')}</div>`;
+  const { request: r } = await api.get(`requests/${id}`);
+  if (r.role === 'requester') { go(`#/calendario?space=${r.space_id}&date=${r.date}`); return; }
+  const $b = $app.querySelector('#reqbox');
+  const who = esc(r.requester_name) + (r.requester_company ? ` (${esc(r.requester_company)})` : '');
+  const when = `${spaceName(r.space_id)} · ${fmtDate(r.date, { weekday: 'long', day: 'numeric', month: 'long' })} · ${hh(r.start_hour)}–${hh(r.end_hour)}`;
+  if (r.status === 'pending') {
+    $b.dataset.req = r.id;
+    $b.innerHTML = `<h2>${t('req.holderTitle', { who, space: spaceName(r.space_id) })}</h2><p class="muted small">${when}</p>
+      <p>${t('req.holderText', { mins: state.config.rules.request_response_minutes })}</p>
+      <div class="countdown big" aria-live="polite">…</div>
+      <div class="row"><button class="btn primary" id="relBtn">${t('req.release')}</button><button class="btn" id="keepBtn">${t('req.keep')}</button></div>`;
+    const act = async (action) => {
+      $b.querySelectorAll('button').forEach((x) => { x.disabled = true; });
+      try { await api.post(`requests/${id}/${action}`); toast(action === 'release' ? t('req.releasedToast') : t('req.keptToast')); } catch (err) { toast(errorMsg(err)); }
+      await refreshConfig(); viewRequest(id);
+    };
+    $b.querySelector('#relBtn').onclick = () => act('release');
+    $b.querySelector('#keepBtn').onclick = () => act('keep');
+    watchRequest(id, async () => { await refreshConfig(); viewRequest(id); });
+  } else {
+    const msg = { released: 'req.doneReleased', declined: 'req.doneKept', expired: 'req.doneExpired', closed: 'req.doneClosed' }[r.status] || 'req.doneClosed';
+    $b.innerHTML = `<h2>${t(msg, { who })}</h2><p class="muted small">${when}</p><a class="btn" href="#/mis-apartados">${t('mine.title')}</a>`;
+  }
+  renderBanner();
 }
 function toggleHour(h) {
   const max = state.config.rules.max_hours_per_booking;
@@ -304,7 +406,7 @@ function bookingCard(b) {
   const now = Date.now();
   const started = now >= Date.parse(b.start_at);
   const canCheckin = b.status === 'active' && !b.checked_in_at && now >= b.checkin.opens && now <= b.checkin.closes;
-  const reasonKey = b.released_reason && ['no_show', 'ended_early', 'closure', 'user_disabled'].includes(b.released_reason) ? b.released_reason : b.status;
+  const reasonKey = b.released_reason && ['no_show', 'ended_early', 'closure', 'user_disabled', 'request', 'request_timeout'].includes(b.released_reason) ? b.released_reason : b.status;
   const chip = b.status === 'active' ? (b.checked_in_at ? 'info' : 'mine') : b.status === 'completed' ? 'free' : 'past';
   let actions = '';
   if (b.status === 'active') {
@@ -363,6 +465,8 @@ async function viewActivity() {
         text = t('act.closure', { space, kind: t('act.kind_' + (kind === 'free_use' ? 'free_use' : 'closed')) }) + (rest.length ? ` — ${esc(rest.join(': '))}` : '');
       } else if (it.type === 'cancelled' && (it.detail === 'closure' || it.detail === 'user_disabled')) {
         text = t('act.cancelled_' + it.detail, { who, space });
+      } else if (it.type.startsWith('request_')) {
+        text = t('act.' + it.type, { who, space, other: `<b>${esc(it.detail || '—')}</b>` });
       } else text = t('act.' + it.type, { who, space });
       const when = it.date ? `${fmtDate(it.date, { weekday: 'short', day: 'numeric', month: 'short' })}${it.start_hour !== null ? ` · ${hh(it.start_hour)}–${hh(it.end_hour)} · ${t('act.duration', { n: it.hours })}` : ''}` : '';
       $l.insertAdjacentHTML('beforeend', `<div class="item act-${esc(it.type)}"><div>${text}</div><div class="meta">${when}${when ? ' · ' : ''}${fmtDateTime(it.created_at)}</div></div>`);
@@ -614,9 +718,26 @@ async function refreshConfig() {
     try {
       const c = await api.get('config');
       state.config.today = c.today;
+      state.config.pendingRequests = c.pendingRequests || [];
+      renderBanner();
       const { path } = parseHash();
       if (path === '/mis-apartados' || path === '/') route();
+      // El calendario abierto se actualiza solo (p. ej. aparece "Pedir el espacio" al pasar los 15 min),
+      // salvo que la persona esté seleccionando horas.
+      else if (path === '/calendario' && cal.week.length && !cal.sel.length && !reqPoll) loadWeek().catch(() => {});
     } catch {}
-  }, 60_000);
-  document.addEventListener('visibilitychange', () => { if (!document.hidden && state.user) { const { path } = parseHash(); if (['/', '/mis-apartados', '/calendario'].includes(path)) route(); } });
+  }, 30_000);
+  // El service worker avisa cuando llega una notificación con la app abierta.
+  navigator.serviceWorker?.addEventListener('message', async (e) => {
+    if (e.data?.type !== 'push' || !state.user) return;
+    try { await refreshConfig(); renderBanner(); } catch {}
+    const { path } = parseHash();
+    if (path === '/calendario' && cal.week.length) loadWeek().catch(() => {});
+  });
+  document.addEventListener('visibilitychange', async () => {
+    if (document.hidden || !state.user) return;
+    try { await refreshConfig(); } catch {}
+    const { path } = parseHash();
+    if (['/', '/mis-apartados', '/calendario', '/solicitud'].includes(path)) route(); else renderBanner();
+  });
 })();

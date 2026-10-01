@@ -199,6 +199,23 @@ final class Db
           attempts INTEGER NOT NULL DEFAULT 0,
           created_at TEXT NOT NULL DEFAULT $now
         );
+        CREATE TABLE IF NOT EXISTS space_requests (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          booking_id INTEGER NOT NULL REFERENCES bookings(id),
+          space_id TEXT NOT NULL,
+          date TEXT NOT NULL,
+          requester_id INTEGER NOT NULL REFERENCES users(id),
+          holder_id INTEGER NOT NULL REFERENCES users(id),
+          status TEXT NOT NULL DEFAULT 'pending',  -- pending|released|expired|declined|closed
+          expires_at TEXT NOT NULL,
+          responded_at TEXT,
+          hold_until TEXT,
+          from_hour INTEGER,
+          to_hour INTEGER,
+          created_at TEXT NOT NULL DEFAULT $now
+        );
+        CREATE INDEX IF NOT EXISTS idx_req_booking ON space_requests(booking_id);
+        CREATE INDEX IF NOT EXISTS idx_req_status ON space_requests(status, expires_at);
         CREATE TABLE IF NOT EXISTS rate_limits (
           key TEXT PRIMARY KEY,
           count INTEGER NOT NULL,

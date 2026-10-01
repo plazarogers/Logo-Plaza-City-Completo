@@ -5,7 +5,7 @@ declare(strict_types=1);
 const PCB_VERSION = '2.0.0';
 define('PCB_APP', __DIR__);
 
-foreach (['Config', 'Db', 'Time', 'Msg', 'Holidays', 'Schedule', 'Auth', 'Invites', 'WebPush', 'Push', 'Bookings', 'Owner'] as $cls) {
+foreach (['Config', 'Db', 'Time', 'Msg', 'Holidays', 'Schedule', 'Auth', 'Invites', 'WebPush', 'Push', 'Bookings', 'Requests', 'Owner'] as $cls) {
     require_once __DIR__ . "/lib/$cls.php";
 }
 
