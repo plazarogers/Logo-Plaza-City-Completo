@@ -1,201 +1,170 @@
-# Plaza City · Reservación de áreas comunes
+# Plaza City · Reservación de áreas comunes (`plazacity.net/booking`)
 
-Aplicación web (PWA, mobile-first) para que los inquilinos del edificio de
-oficinas Plaza City aparten las áreas comunes por hora: **Conference Room**,
-**Atrium** y **Lounge (2º piso)**. Funciona en celular, tablet y laptop, se
-puede instalar como app y envía notificaciones push.
+Aplicación web para que los inquilinos de Plaza City aparten por hora el
+**Conference Room**, el **Atrium** y el **Lounge (2º piso)**. Vive dentro del
+sitio del edificio, en la carpeta `booking`, y funciona en celular, tablet y
+laptop. Se puede instalar como app en la pantalla de inicio y envía
+notificaciones push.
 
-Todo el sistema opera solo: los horarios, los festivos, la doble reserva, el
-check-in y la liberación por no presentarse se validan automáticamente. No hay
-panel de administración diario; el dueño del edificio únicamente genera links
-de invitación.
+El sistema se administra solo: horarios, festivos, doble reserva, check-in,
+liberación por no presentarse, recordatorios y bajas por fin de contrato son
+automáticos. El dueño solo genera links de invitación y, si quiere, marca días
+de cierre.
 
-- Investigación previa (identidad visual y benchmark de Skedda, Robin, Envoy,
-  OfficeRnD y YAROOMS): [`docs/RESEARCH.md`](docs/RESEARCH.md).
+- Investigación previa y benchmark (Skedda, Robin, Envoy, OfficeRnD, YAROOMS): [`docs/RESEARCH.md`](docs/RESEARCH.md)
 
-## Reglas implementadas
+## Contenido
+
+| Carpeta | Qué es |
+|---|---|
+| `booking/` | **Lo que se sube al hosting**, tal cual, a `public_html/booking/`. |
+| `tests/` | Pruebas automatizadas (`php tests/run.php`). No se suben. |
+| `docs/` | Investigación y decisiones. |
+
+## Requisitos del hosting
+
+Cualquier hosting compartido con cPanel (GoDaddy, Bluehost, HostGator, Namecheap,
+SiteGround, A2, Hostinger…) cumple:
+
+- PHP 8.0 o superior (recomendado 8.2+) con `pdo_sqlite` y `openssl`. Vienen activos por defecto.
+- Certificado SSL (https). Es gratis en cPanel con AutoSSL. **Sin https no hay notificaciones push ni modo app.**
+- No necesita MySQL, Node, Composer ni ningún servicio externo. La base de datos es un archivo SQLite.
+
+Si plazacity.net está hecho con un constructor cerrado (Wix, Squarespace,
+GoDaddy Website Builder) no se pueden subir carpetas. En ese caso se contrata un
+hosting PHP básico y se usa un subdominio, por ejemplo `booking.plazacity.net`,
+con un enlace desde el sitio. La app funciona igual.
+
+## Instalar en plazacity.net/booking (10 minutos)
+
+1. **Sube la carpeta.** En cPanel abre *File Manager* → `public_html`. Sube el
+   archivo `booking.zip` y usa *Extract*. Debe quedar `public_html/booking/index.html`.
+   (Para crear el zip: `zip -r booking.zip booking` dentro de esta carpeta, o
+   descarga el repositorio desde GitHub y comprime la carpeta `booking`.)
+2. **Versión de PHP.** cPanel → *Select PHP Version* (o *MultiPHP Manager*) → 8.2 o superior.
+3. **SSL.** cPanel → *SSL/TLS Status* → *Run AutoSSL*. Verifica que `https://plazacity.net` abra con candado.
+4. **Instalador.** Abre `https://plazacity.net/booking/install.php`. Revisa que
+   todos los requisitos digan OK, escribe tu correo y una **llave de
+   administración** (mínimo 12 caracteres, guárdala en un lugar seguro) y pulsa *Instalar*.
+   El instalador genera solo las llaves de notificaciones (VAPID), el token del
+   cron y la base de datos con un nombre aleatorio. Hazlo justo después de
+   subir la carpeta: el primero que lo ejecuta fija la llave.
+5. **Cron (recomendado).** cPanel → *Cron Jobs* → "Once Per Minute" con el comando que muestra el instalador:
+   ```
+   php /home/TU_USUARIO/public_html/booking/cron.php >/dev/null 2>&1
+   ```
+   Si tu plan no tiene cron, crea una tarea gratuita en cron-job.org que llame cada
+   minuto a la URL `https://plazacity.net/booking/cron.php?token=…` que te dio el instalador.
+   Sin cron la app también funciona: hace el mantenimiento cada vez que alguien
+   la usa, pero los recordatorios y liberaciones llegan con menos puntualidad.
+6. **Borra `install.php`** del servidor (ya no se puede volver a ejecutar, pero no hace falta dejarlo).
+7. **Forzar https (opcional).** En `booking/.htaccess` descomenta el bloque "Forzar https".
+8. **Enlace en el sitio.** Agrega un botón "Reservar áreas comunes" en plazacity.net que apunte a `https://plazacity.net/booking/`.
+
+## Uso diario del dueño: `https://plazacity.net/booking/#/admin`
+
+Se entra con la llave de administración. No requiere cuenta de inquilino.
+
+- **Invitaciones.** Genera un link con etiqueta (p. ej. "Suite 204 – Acme"),
+  número de personas que pueden usarlo, días de validez y, opcionalmente, **fin
+  de contrato**. Cópialo o compártelo por WhatsApp/correo. Ves cuáles están
+  activos, usados, expirados o revocados y quién se registró con cada uno.
+  "Revocar" lo invalida al instante.
+- **Inquilinos.** Lista con última visita, apartados, no-shows y dispositivos con
+  push. Puedes desactivar (cierra sesiones y cancela sus apartados futuros),
+  reactivar, cambiar fin de acceso y generar un **link para nueva contraseña**
+  (un solo uso, 24 h) si alguien la olvida.
+- **Cierres.** Marca un día como cerrado (mantenimiento, evento) o de uso libre,
+  para un espacio o todo el edificio. Los apartados afectados se cancelan solos
+  y cada afectado recibe una notificación.
+- **Uso.** Ocupación por espacio, no-shows, cancelaciones y horas por empresa de
+  los últimos 30 días, y descarga de todos los apartados en CSV para Excel.
+
+Cuando vence el fin de contrato de un inquilino, su cuenta se desactiva sola.
+
+## Reglas
 
 | Espacio | Lunes a viernes | Sábado |
 |---|---|---|
-| Conference Room | 8:00–17:00 + sesiones especiales 17:00–21:00 | cerrado |
+| Conference Room | 8:00–17:00 + sesiones especiales 17:00–21:00 | — |
 | Atrium | 17:00–21:00 | 8:00–13:00 |
 | Lounge (2º piso) | 17:00–21:00 | 8:00–13:00 |
 
-- Bloques de 1 hora, zona horaria **America/Chicago** (el servidor puede estar en cualquier zona).
-- **Domingos y días festivos federales de EE.UU.**: no se aparta; el calendario
-  los muestra como "Uso libre, por orden de llegada".
-- Anticipación máxima 30 días, máximo 4 horas contiguas por apartado y 4 horas
-  por espacio al día por usuario (configurable por variables de entorno).
-- Doble reserva imposible: restricción `UNIQUE(space_id, slot_start)` en la base de datos.
-- Check-in desde 15 min antes hasta 15 min después del inicio. Sin check-in, el
-  espacio se libera solo y se notifica. Apartar la hora en curso cuenta como
-  check-in inmediato. Quien apartó puede "terminar antes" y liberar las horas restantes.
-- Solo quien apartó puede cancelar.
-- Bitácora pública de actividad: quién apartó qué, cuándo y por cuánto tiempo.
-- Interfaz en español con opción de inglés (Ajustes).
+- Bloques de 1 hora, zona America/Chicago (incluye cambios de horario de verano).
+- **Domingos y festivos federales de EE.UU.**: no se aparta; se muestra "Uso libre, por orden de llegada".
+- Anticipación máxima 30 días; máximo 4 horas seguidas; 4 horas por espacio al día por persona; máximo 10 apartados activos por persona.
+- Doble reserva imposible: la base de datos tiene una restricción única por espacio y hora.
+- Check-in desde 15 min antes hasta 15 min después del inicio. Recordatorio push 15 min antes. Sin check-in, el espacio se libera solo y se avisa a todos. Apartar la hora en curso cuenta como check-in.
+- Solo quien apartó puede cancelar; si ya empezó, "Liberar" devuelve las horas restantes.
+- Bitácora pública: quién apartó qué, cuándo y cuánto tiempo; cancelaciones, liberaciones y cierres.
 
-## Stack y por qué
+Los valores se cambian en `booking/app/config.php`, sección `rules` (ver
+`config.sample.php`). Los horarios de los espacios están en `booking/app/lib/Schedule.php`.
 
-| Pieza | Elección | Motivo |
-|---|---|---|
-| Servidor | Node.js 22 + Express 5 | Un solo proceso, sin framework pesado; el scheduler de no-show corre dentro del mismo proceso. |
-| Base de datos | SQLite (better-sqlite3), modo WAL | Un archivo en un volumen: cero servidores de BD que administrar, transacciones y restricciones únicas para evitar la doble reserva. Suficiente para cientos de inquilinos. |
-| Frontend | HTML/CSS/JS nativo (módulos ES), PWA | Sin build step ni bundler: se edita y se despliega. Instalable en iOS/Android/escritorio. |
-| Push | Web Push estándar (VAPID) con `web-push` | No requiere Firebase ni cuenta de terceros; funciona en Chrome, Edge, Firefox, Android y Safari/iOS 16.4+ (instalada en pantalla de inicio). |
-| Fechas | Luxon | Manejo correcto de America/Chicago y cambios de horario. |
-| Festivos | Cálculo algorítmico (`src/holidays.js`) | Las reglas federales son fijas: no depende de una API externa ni de actualizaciones manuales. |
-| Despliegue | Docker / Fly.io / Render / VPS | Una imagen, un volumen, cuatro variables de entorno. |
+## Notificaciones push
 
-## Correr en local
+Se activan solas con el instalador: genera las llaves VAPID y las guarda en
+`app/config.php`. No hay que contratar Firebase ni ningún servicio.
 
-Requisitos: Node.js 20 o superior.
+- Cada inquilino pulsa **Ajustes → Activar en este dispositivo** (o el aviso en Inicio) y puede enviarse una prueba.
+- **iPhone/iPad (iOS 16.4+)**: primero Compartir → *Agregar a inicio*, abrir la app desde ese ícono y activar ahí.
+- Se notifica a todos los demás cuando alguien aparta, cancela o libera (espacio, día, hora y quién), en el idioma de cada persona.
+- Se notifica al interesado el recordatorio de check-in, la liberación por no-show y la cancelación por cierre del edificio.
+- Solo se aceptan suscripciones de los servicios oficiales (Google, Mozilla, Apple, Microsoft).
+- Si algún día cambias las llaves VAPID, cada inquilino debe volver a activar las notificaciones.
+
+## Días festivos
+
+Los festivos federales se **calculan automáticamente para cualquier año** en
+`booking/app/lib/Holidays.php`, con la regla oficial (fecha fija con
+observancia viernes/lunes, o "n-ésimo lunes/jueves del mes"). No hay nada que
+actualizar cada año. Días extra del edificio (Nochebuena, por ejemplo) se
+agregan desde **Administración → Cierres** como "uso libre".
+
+## Seguridad
+
+- Contraseñas con `password_hash` (bcrypt). Sesiones con token aleatorio en cookie `HttpOnly`, `SameSite=Lax` y `Secure` en https; en la base solo se guarda su hash.
+- Protección CSRF: toda escritura exige un encabezado que un formulario de otro sitio no puede enviar.
+- Límite de intentos para login, registro, restablecer contraseña y llave de administración.
+- Links de invitación y de contraseña aleatorios, con caducidad y usos limitados.
+- `app/` y la base de datos están bloqueados por `.htaccess`; la base además tiene nombre aleatorio. Si tu hosting lo permite, mueve el archivo fuera de `public_html` y actualiza `db_path` en `app/config.php`.
+- Encabezados de seguridad (CSP, X-Frame-Options, nosniff) y consultas SQL siempre parametrizadas.
+
+## Actualizar la app
+
+Sube los archivos nuevos encima de los anteriores **sin borrar** `booking/app/config.php`
+ni `booking/app/data/`. La base de datos se actualiza sola.
+
+## Respaldo
+
+Toda la información está en el archivo `.sqlite` de `booking/app/data/`.
+Descárgalo desde el File Manager (o inclúyelo en el respaldo de cPanel).
+
+## Probar en local
 
 ```bash
 cd plaza-city-booking
-npm install
-cp .env.example .env
-npm run vapid          # imprime VAPID_PUBLIC_KEY / VAPID_PRIVATE_KEY: pégalas en .env
-# edita .env: SESSION_SECRET (aleatorio) y OWNER_KEY (llave del dueño)
-npm run dev            # http://localhost:3000
+php booking/install.php --owner-key="una-llave-larga" --base-url="http://localhost:8000/booking" --email="tu@correo.com"
+php -S localhost:8000          # abre http://localhost:8000/booking/
+php tests/run.php              # pruebas automatizadas
 ```
 
-Primer usuario: genera un link de invitación (ver abajo), ábrelo en el navegador
-y regístrate. Para probar en el celular dentro de tu red usa la IP de tu máquina
-en `BASE_URL` (las push necesitan HTTPS o `localhost`; en local funcionan en `localhost`).
-
-Pruebas automatizadas (festivos, horarios, doble reserva, check-in, no-show, invitaciones):
-
-```bash
-npm test
-```
-
-## Links de invitación (registro)
-
-El registro solo es posible con un link de invitación. Cada link tiene etiqueta,
-número de usos y fecha de expiración; caduca solo.
-
-**Desde la web:** entra a `https://tu-dominio/invitaciones`, escribe la
-`OWNER_KEY` configurada en el servidor y podrás:
-
-- generar un link (etiqueta, usos, días de validez) y copiarlo;
-- ver cuáles están activos, usados, expirados o revocados y quién se registró con cada uno;
-- revocar un link activo con un clic.
-
-La llave se guarda solo en la sesión del navegador ("Salir del modo dueño" la olvida).
-
-**Desde la terminal del servidor** (sin `OWNER_KEY`):
-
-```bash
-npm run invite -- create --label "Suite 204 - Acme" --uses 1 --days 7
-npm run invite -- list
-npm run invite -- revoke 3
-```
-
-El link tiene la forma `BASE_URL/registro?invite=TOKEN`; envíalo por correo o WhatsApp al inquilino.
-
-## Activar notificaciones push
-
-1. Genera las llaves VAPID una sola vez:
-   ```bash
-   npm run vapid
-   ```
-2. Copia `VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY` y `VAPID_SUBJECT`
-   (`mailto:` con un correo de contacto) a las variables de entorno del servidor.
-   Si cambias las llaves, los usuarios deberán volver a activar las push.
-3. Reinicia el servidor. En el arranque verás una advertencia si faltan llaves.
-4. Cada inquilino activa las notificaciones en **Ajustes → Notificaciones push →
-   Activar en este dispositivo** y puede enviarse una prueba.
-   - Requiere HTTPS en producción (Fly, Render y Railway lo dan por defecto).
-   - En iPhone/iPad (iOS 16.4+): primero agregar la app a la pantalla de inicio
-     (Compartir → Agregar a inicio) y activar las push desde la app instalada.
-
-Se envía una push a todos los demás usuarios registrados cuando alguien aparta,
-cancela o libera un espacio (incluye espacio, día, hora y quién). Quien no hace
-check-in recibe además un aviso de que su apartado se liberó.
-
-## Calendario de días festivos
-
-Los festivos federales de EE.UU. se **calculan automáticamente para cualquier
-año** en `src/holidays.js` (regla legal: fecha fija con observancia
-viernes/lunes, o "n-ésimo lunes/jueves del mes"). No hay nada que actualizar
-cada año. Para verificar lo que aplicará el sistema:
-
-```bash
-npm run holidays -- 2027
-```
-
-Festivos adicionales del edificio (por ejemplo, cierre en Nochebuena): crea
-`data/holidays.extra.json` (ver `data/holidays.extra.json.example`) y reinicia.
-Esos días se tratan igual que un festivo: uso libre, sin apartados.
-
-## Variables de entorno
-
-Ver `.env.example`. Obligatorias en producción: `SESSION_SECRET`, `OWNER_KEY`,
-`BASE_URL`. Para push: las tres `VAPID_*`. Las reglas (`BOOKING_WINDOW_DAYS`,
-`MAX_HOURS_PER_BOOKING`, `MAX_HOURS_PER_USER_PER_DAY`,
-`CHECKIN_OPENS_MINUTES_BEFORE`, `CHECKIN_GRACE_MINUTES`,
-`CANCEL_LOCK_IN_MINUTES`, `INVITE_DEFAULT_DAYS`) son opcionales. Los horarios de
-cada espacio están en `src/schedule.js`.
-
-## Desplegar
-
-Cualquier host que corra un contenedor con un volumen persistente sirve. El
-proceso debe estar siempre encendido (no "sleep on idle") para que el
-liberador de no-shows corra cada minuto.
-
-### Docker (VPS propio)
-
-```bash
-cp .env.example .env   # llena SESSION_SECRET, OWNER_KEY, BASE_URL, VAPID_*
-docker compose up -d --build
-```
-
-Pon un proxy con HTTPS delante (Caddy o Nginx). Con Caddy basta:
-`reservas.plazacity.net { reverse_proxy localhost:3000 }`.
-
-### Fly.io
-
-```bash
-fly launch --no-deploy            # usa el fly.toml incluido
-fly volumes create plaza_data --size 1 --region dfw
-fly secrets set SESSION_SECRET=... OWNER_KEY=... VAPID_PUBLIC_KEY=... VAPID_PRIVATE_KEY=... VAPID_SUBJECT=mailto:...
-fly deploy
-```
-
-### Render / Railway
-
-Crea un "Web Service" desde este repo (Dockerfile detectado), agrega un disco
-persistente montado en `/app/data`, define las variables de entorno y desactiva
-el apagado por inactividad (plan que mantenga el proceso vivo).
-
-### Respaldos
-
-Toda la información vive en `data/plaza-city.db`. Copiar ese archivo (con
-`sqlite3 data/plaza-city.db ".backup respaldo.db"`) es el respaldo completo.
+`localhost` cuenta como sitio seguro, así que las notificaciones también se pueden probar ahí.
+Para reinstalar en local borra `booking/app/config.php` y el `.sqlite` de `booking/app/data/`.
 
 ## Estructura
 
 ```
-src/
-  server.js      arranque, estáticos, scheduler cada minuto
-  config.js      variables de entorno y reglas
-  schedule.js    espacios y horarios permitidos
-  holidays.js    festivos federales (algorítmico) + extras
-  bookings.js    crear/cancelar/check-in/liberar, no-show, bitácora
-  invites.js     links de invitación
-  auth.js        contraseñas (scrypt), sesiones, llave de dueño
-  push.js        Web Push (VAPID)
-  routes/api.js  API REST
-  scripts/       vapid, invite, holidays (CLI)
-public/
-  index.html, css/theme.css (identidad), css/app.css, js/app.js, js/i18n.js, sw.js
-test/            pruebas con node:test
+booking/
+  index.html, css/, js/, icons/   interfaz (PWA)
+  sw.js, manifest.webmanifest     notificaciones y modo app
+  api.php                         API: api.php?r=<ruta>
+  cron.php                        mantenimiento automático
+  install.php                     instalador de un solo uso
+  .htaccess                       protecciones Apache/LiteSpeed
+  app/
+    bootstrap.php, config.sample.php
+    lib/  Config, Db, Time, Msg, Holidays, Schedule, Auth, Invites,
+          Bookings, Owner, Push, WebPush
+    data/ base de datos SQLite (generada)
 ```
-
-## API (resumen)
-
-`POST /api/register` · `POST /api/login` · `POST /api/logout` · `GET /api/me` ·
-`GET /api/config` · `GET /api/calendar/:space?from=` · `GET /api/calendar/:space/:date` ·
-`POST /api/bookings` · `GET /api/bookings/mine` · `POST /api/bookings/:id/cancel|checkin|release` ·
-`GET /api/activity` · `GET /api/holidays/:year` · `POST /api/push/subscribe|unsubscribe|test` ·
-`GET|POST /api/owner/invites` · `POST /api/owner/invites/:id/revoke` (header `x-owner-key`).

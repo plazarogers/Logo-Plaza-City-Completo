@@ -1,5 +1,6 @@
-node_modules/
-data/*.db
-data/*.db-*
-.env
-*.log
+# Secretos y datos generados por el instalador en el servidor
+booking/app/config.php
+booking/app/data/*.sqlite
+booking/app/data/*.sqlite-*
+*.zip
+.DS_Store

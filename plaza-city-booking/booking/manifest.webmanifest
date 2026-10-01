@@ -1,0 +1,17 @@
+{
+  "name": "Plaza City — Áreas comunes",
+  "short_name": "Plaza City",
+  "description": "Reservación de áreas comunes para inquilinos de Plaza City",
+  "id": "./",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#14213d",
+  "theme_color": "#14213d",
+  "lang": "es",
+  "icons": [
+    { "src": "icons/logo.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" },
+    { "src": "icons/logo-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any maskable" },
+    { "src": "icons/logo-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable" }
+  ]
+}
