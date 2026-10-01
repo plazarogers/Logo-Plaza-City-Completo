@@ -266,26 +266,43 @@ function renderDay() {
   }
   const myHold = d.hours.find((h) => h.hold && h.hold.mine);
   $day.innerHTML = head + (myHold ? `<div class="success small">${t('req.holdMine', { time: myHold.hold.until })}</div>` : '') + requestPanel(d)
-    + `<p class="muted small">${t('cal.tapHours', { max: state.config.rules.max_hours_per_booking })}</p><div class="hours">` + d.hours.map((h) => {
-    const b = h.booking;
-    const heldOther = !b && h.hold && !h.hold.mine;
-    const cls = b ? (b.mine ? 'mine' : 'busy') : heldOther ? 'busy' : h.past ? 'past' : 'free';
-    const who = b ? `${esc(b.user_name)}${b.user_company ? ' · ' + esc(b.user_company) : ''}${b.note ? ' — ' + esc(b.note) : ''}`
-      : heldOther ? t('req.heldFor', { name: esc(h.hold.name), time: h.hold.until })
-      : h.hold && h.hold.mine ? t('req.heldForYou', { time: h.hold.until })
-      : h.past ? t('cal.past') : t('cal.free');
-    const tag = b && b.checked_in ? `<span class="chip info">${t('cal.checkedIn')}</span>` : h.kind === 'special' ? `<span class="kind" title="${t('cal.special')}">${t('cal.specialShort')}</span>` : '';
-    // Un solo botón por apartado: va en la primera hora del bloque (11–13 → en la de 11).
-    if (b && b.mine && b.calendar) {
-      const first = !d.hours.some((x) => x.hour < h.hour && x.booking && x.booking.id === b.id);
-      const link = first ? `<a class="gcal" href="${esc(gcalUrl(b))}" target="_blank" rel="noopener">${ICONS.gcal}<span>${t('cal.gcal')}</span></a>` : '';
-      return `<div class="hour mine ${first ? 'has-gcal' : ''}" data-hour="${h.hour}"><span class="t">${hh(h.hour)}</span><span class="who">${who}</span>${tag}${link}</div>`;
-    }
-    return `<button class="hour ${cls} ${cal.sel.includes(h.hour) ? 'selected' : ''}" data-hour="${h.hour}" ${cls !== 'free' ? 'disabled' : ''} aria-pressed="${cal.sel.includes(h.hour)}"><span class="t">${hh(h.hour)}</span><span class="who">${who}</span>${tag}</button>`;
-  }).join('') + '</div>';
+    + `<p class="muted small">${t('cal.tapHours', { max: state.config.rules.max_hours_per_booking })}</p><div class="hours">` + hourRows(d) + '</div>';
   $day.querySelectorAll('.hour.free').forEach((el) => { el.onclick = () => toggleHour(Number(el.dataset.hour)); });
   bindRequestPanel($day);
   renderConfirm();
+}
+
+// Las horas de un mismo apartado se pintan como un solo bloque del mismo color (2 h = alto de 2 horas, etc.).
+function hourRows(d) {
+  const out = [];
+  for (let i = 0; i < d.hours.length; i++) {
+    const h = d.hours[i];
+    const b = h.booking;
+    if (b) {
+      const run = [h];
+      while (d.hours[i + 1]?.booking?.id === b.id) run.push(d.hours[++i]);
+      out.push(bookingBlock(b, run));
+      continue;
+    }
+    const heldOther = h.hold && !h.hold.mine;
+    const cls = heldOther ? 'busy' : h.past ? 'past' : 'free';
+    const who = heldOther ? t('req.heldFor', { name: esc(h.hold.name), time: h.hold.until })
+      : h.hold && h.hold.mine ? t('req.heldForYou', { time: h.hold.until })
+      : h.past ? t('cal.past') : t('cal.free');
+    const tag = h.kind === 'special' ? `<span class="kind" title="${t('cal.special')}">${t('cal.specialShort')}</span>` : '';
+    out.push(`<button class="hour ${cls} ${cal.sel.includes(h.hour) ? 'selected' : ''}" data-hour="${h.hour}" ${cls !== 'free' ? 'disabled' : ''} aria-pressed="${cal.sel.includes(h.hour)}"><span class="t">${hh(h.hour)}</span><span class="who">${who}</span>${tag}</button>`);
+  }
+  return out.join('');
+}
+function bookingBlock(b, run) {
+  const n = run.length;
+  const from = run[0].hour, to = run[n - 1].hour + 1;
+  const who = `${esc(b.user_name)}${b.user_company ? ' · ' + esc(b.user_company) : ''}${b.note ? ' — ' + esc(b.note) : ''}`;
+  const tag = b.checked_in ? `<span class="chip info">${t('cal.checkedIn')}</span>` : run[0].kind === 'special' ? `<span class="kind" title="${t('cal.special')}">${t('cal.specialShort')}</span>` : '';
+  // Un solo botón de Google Calendar por apartado, dentro del bloque.
+  const link = b.mine && b.calendar ? `<a class="gcal" href="${esc(gcalUrl(b))}" target="_blank" rel="noopener" aria-label="${t('cal.gcalLong')}" title="${t('cal.gcalLong')}">${ICONS.gcal}<span>${t('cal.gcal')}</span></a>` : '';
+  const times = run.map((x, i) => `<span class="t" style="grid-row:${i + 1}">${hh(x.hour)}</span>`).join('');
+  return `<div class="hour block ${b.mine ? 'mine' : 'busy'}" style="--n:${n}" data-hour="${from}" role="group" aria-label="${hh(from)}–${hh(to)}">${times}<span class="info"><span class="who">${who}</span>${tag}</span>${link}</div>`;
 }
 
 // Abre Google Calendar con el evento ya lleno; las horas van en UTC para que no dependa de la zona del teléfono.

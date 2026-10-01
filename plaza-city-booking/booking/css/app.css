@@ -114,7 +114,7 @@ input:focus, select:focus, textarea:focus, .btn:focus-visible { outline: 2px sol
 
 /* Cuadrícula de horas */
 .hours { display: grid; gap: 6px; }
-@media (min-width: 560px) { .hours { grid-template-columns: 1fr 1fr; } }
+/* Una sola columna en todas las pantallas para que los bloques de apartado queden continuos. */
 .hour {
   display: grid; grid-template-columns: 74px 1fr auto; align-items: center; gap: 10px;
   border: 1px solid var(--pc-border); border-radius: var(--pc-radius-sm); padding: 10px 12px; min-height: 56px;
@@ -184,7 +184,7 @@ input:focus, select:focus, textarea:focus, .btn:focus-visible { outline: 2px sol
   .page { margin-left: 220px; max-width: none; padding: 24px 32px; }
   .confirmbar { bottom: 0; left: 220px; }
   .toast { bottom: 24px; }
-  .hours { grid-template-columns: 1fr 1fr 1fr; }
+
 }
 @media (min-width: 1300px) { .page { max-width: 1100px; margin-left: calc(220px + (100vw - 220px - 1100px) / 2); } }
 
@@ -316,15 +316,37 @@ body.no-nav .confirmbar { bottom: 0; }
 .countdown.big { font-size: 1.6rem; margin: 6px 0 12px; }
 @media (min-width: 900px) { #banner { margin-left: 220px; } body.no-nav #banner { margin-left: 0; } }
 
-/* Botón de Google Calendar dentro del bloque que apartaste (una vez por apartado). */
-.hour.mine { cursor: default; }
-.hour.has-gcal { grid-template-rows: auto auto; row-gap: 8px; }
+/* Bloques de apartado: todas las horas de un apartado en un solo bloque del mismo color,
+   con borde de 1 px más oscuro y el alto de las horas que ocupa (2 h = 2 filas, etc.). */
+.hours { max-width: 760px; }
+.hour.block {
+  --row: 56px;
+  grid-template-rows: repeat(var(--n), minmax(calc(var(--row) - 20px), auto)); grid-auto-rows: minmax(44px, auto);
+  row-gap: 6px; align-items: center; cursor: default;
+  min-height: calc(var(--n) * var(--row) + (var(--n) - 1) * 6px);
+}
+.hour.block { grid-template-columns: 74px minmax(0, 1fr); }
+.hour.block .t { grid-column: 1; }
+.hour.block .info { grid-column: 2; grid-row: 1; display: flex; flex-wrap: wrap; align-items: center; gap: 4px 10px; min-width: 0; }
+.hour.block .who { flex: 1 1 8em; min-width: 0; }
+.hour.block .chip, .hour.block .kind { margin-left: auto; }
+.hour.block.mine { border: 1px solid var(--pc-mine-ink); }
+.hour.block.busy { border: 1px solid var(--pc-busy-ink); }
+.hour.block .t + .t { opacity: .75; }
+.hour.block.mine .chip.info { background: var(--pc-surface); }
+
+/* Botón de Google Calendar dentro del bloque que apartaste (uno por apartado). */
 .hour .gcal {
-  grid-column: 1 / -1; display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+  grid-column: 2; grid-row: 2; display: inline-flex; align-items: center; justify-content: center; gap: 8px;
   min-height: 44px; padding: 8px 12px; border-radius: var(--pc-radius-sm);
   background: var(--pc-surface); color: var(--pc-mine-ink); border: 1px solid var(--pc-mine-ink);
-  font-weight: 600; font-size: .9rem; text-decoration: none;
+  font-weight: 600; font-size: .9rem; text-decoration: none; min-width: 0; justify-self: start; width: 100%; max-width: 300px;
 }
+.hour .gcal span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .hour .gcal svg { width: 18px; height: 18px; flex: 0 0 auto; }
 .hour .gcal:hover { background: var(--pc-mine-ink); color: var(--pc-surface); }
 .hour .gcal:focus-visible { outline: 3px solid var(--pc-focus); outline-offset: 2px; }
+@media (max-width: 359px) {
+  .hour.block { grid-template-columns: 58px minmax(0, 1fr); }
+  .hour .gcal { padding: 6px 8px; gap: 6px; font-size: .85rem; }
+}
