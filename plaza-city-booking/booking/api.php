@@ -218,11 +218,21 @@ try {
             respond(200, Push::sendNow((int) $u['id'], ['title' => 'Plaza City', 'body' => Msg::$lang === 'en' ? 'Notifications work on this device.' : 'Las notificaciones funcionan en este dispositivo.', 'url' => '#/ajustes', 'tag' => 'test']));
 
         // ---------- dueño / administración ----------
+        case 'GET admin-reset':
+            respond(200, ['pending' => Owner::resetFile() !== null, 'minutes' => Owner::RESET_MINUTES]);
+        case 'POST admin-reset':
+            Auth::rateLimit('owner-reset', 10, 900);
+            Owner::resetKey((string) (body()['key'] ?? ''));
+            respond(200, ['ok' => true]);
+
         default:
             if (str_starts_with($route, 'owner/')) {
                 Auth::requireOwner();
                 switch ($key) {
                     case 'GET owner/check':
+                        respond(200, ['ok' => true]);
+                    case 'POST owner/key':
+                        Owner::setKey((string) (body()['key'] ?? ''));
                         respond(200, ['ok' => true]);
                     case 'GET owner/invites':
                         respond(200, ['invites' => Invites::list()]);

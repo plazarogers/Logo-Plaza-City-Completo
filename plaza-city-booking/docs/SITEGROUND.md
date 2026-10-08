@@ -93,6 +93,15 @@ Vuelve a abrir **Estado del sistema**: debe decir OK.
 
 Agrega en plazacity.net un botón o enlace "Reservar áreas comunes" hacia `https://plazacity.net/booking/`.
 
+## Si pierdes la llave de administración
+
+1. *Site → File Manager* → `public_html/booking/app/data`.
+2. Botón **New File** y nómbralo `reset-llave` (vacío, sin extensión).
+3. Abre **https://plazacity.net/booking/#/admin** y recarga: aparece **Crear llave nueva**. Pulsa **Generar**, copia la llave y pulsa **Guardar y entrar**.
+4. El archivo `reset-llave` se borra solo. Si no lo usas en 60 minutos deja de valer; bórralo.
+
+Para cambiar la llave sin perderla: panel → pestaña **Uso** → **Llave de administración**.
+
 ## Respaldos
 
 *Site Tools → Security → Backups*: SiteGround hace copias diarias automáticas de `public_html`, que incluyen `booking/app/data/` con la base de datos. Para una copia manual, descarga el archivo `.sqlite` desde el File Manager.

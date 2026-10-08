@@ -4,6 +4,64 @@ declare(strict_types=1);
 /** Funciones del dueño/administrador del edificio. */
 final class Owner
 {
+    /** Vigencia del archivo de recuperación de llave (app/data/reset-llave). */
+    public const RESET_MINUTES = 60;
+
+    /** Cambia la llave de administración y la guarda (cifrada) en app/config.php. */
+    public static function setKey(string $key): void
+    {
+        $key = trim($key);
+        if (strlen($key) < 12 || strlen($key) > 200) {
+            throw new AppError('key_short', 400);
+        }
+        $file = Config::file();
+        if (function_exists('opcache_invalidate')) {
+            @opcache_invalidate($file, true);
+        }
+        $cfg = is_file($file) ? require $file : null;
+        if (!is_array($cfg)) {
+            throw new AppError('config_not_writable', 500);
+        }
+        $cfg['owner_key_hash'] = password_hash($key, PASSWORD_DEFAULT);
+        $php = "<?php\n// Generado por install.php; llave cambiada desde el panel el " . gmdate('Y-m-d H:i') . " UTC. NO compartir: contiene secretos.\n"
+            . "// Puedes ajustar 'rules'. Ver config.sample.php.\nreturn " . var_export($cfg, true) . ";\n";
+        // Se escribe a un archivo temporal y se renombra: config.php nunca queda a medias.
+        $tmp = $file . '.tmp-' . bin2hex(random_bytes(4));
+        if (@file_put_contents($tmp, $php, LOCK_EX) === false || !@chmod($tmp, 0600) || !@rename($tmp, $file)) {
+            @unlink($tmp);
+            throw new AppError('config_not_writable', 500);
+        }
+        if (function_exists('opcache_invalidate')) {
+            @opcache_invalidate($file, true);
+        }
+        Config::set($cfg);
+    }
+
+    /**
+     * Recuperación de una llave perdida: el dueño crea un archivo vacío llamado "reset-llave"
+     * (o "reset-key") en app/data con el File Manager. Mientras exista y tenga menos de una hora,
+     * el panel deja crear una llave nueva sin la anterior. Solo quien tiene acceso al hosting puede crearlo.
+     */
+    public static function resetFile(): ?string
+    {
+        foreach (glob(dirname(Config::file()) . '/data/*') ?: [] as $f) {
+            if (is_file($f) && preg_match('/^reset-(llave|key)(\.txt)?$/i', basename($f))) {
+                return time() - (int) filemtime($f) <= self::RESET_MINUTES * 60 ? $f : null;
+            }
+        }
+        return null;
+    }
+
+    public static function resetKey(string $key): void
+    {
+        $f = self::resetFile();
+        if ($f === null) {
+            throw new AppError('reset_not_pending', 403);
+        }
+        self::setKey($key);
+        @unlink($f);
+    }
+
     public static function users(): array
     {
         return Db::all(

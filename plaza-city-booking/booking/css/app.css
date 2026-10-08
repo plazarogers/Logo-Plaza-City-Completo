@@ -350,3 +350,7 @@ body.no-nav .confirmbar { bottom: 0; }
   .hour.block { grid-template-columns: 58px minmax(0, 1fr); }
   .hour .gcal { padding: 6px 8px; gap: 6px; font-size: .85rem; }
 }
+
+/* Llave de administración */
+.keyinput { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; letter-spacing: .04em; }
+.keyshow { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 1.25rem; font-weight: 700; letter-spacing: .06em; word-break: break-all; }

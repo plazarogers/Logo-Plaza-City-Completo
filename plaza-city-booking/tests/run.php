@@ -452,5 +452,39 @@ test('suscripciones inválidas se rechazan', function () {
     eq((int) Db::value('SELECT COUNT(*) FROM push_subscriptions'), 4);
 });
 
+test('cambiar la llave de administración reescribe config.php', function () {
+    $dir = sys_get_temp_dir() . '/pcb-key-' . bin2hex(random_bytes(4));
+    mkdir($dir . '/data', 0700, true);
+    Config::$fileOverride = $dir . '/config.php';
+    try {
+        $cfg = ['base_url' => 'https://plazacity.net/booking', 'owner_key_hash' => password_hash('vieja-llave-123', PASSWORD_DEFAULT), 'cron_token' => 'abc', 'rules' => ['max_hours_per_booking' => 3]];
+        file_put_contents(Config::file(), '<?php return ' . var_export($cfg, true) . ';');
+        throwsCode(fn () => Owner::setKey('corta'), 'key_short');
+        Owner::setKey("  ABCDE-FGHJK-MNPQR-STUVW \n");
+        $new = require Config::file();
+        eq(password_verify('ABCDE-FGHJK-MNPQR-STUVW', $new['owner_key_hash']), true, 'llave nueva, sin espacios');
+        eq(password_verify('vieja-llave-123', $new['owner_key_hash']), false, 'la vieja deja de servir');
+        eq($new['cron_token'], 'abc', 'conserva el resto');
+        eq($new['rules'], ['max_hours_per_booking' => 3], 'conserva reglas tal cual');
+        eq(substr(sprintf('%o', fileperms(Config::file())), -3), '600', 'permisos 600');
+        $_SERVER['HTTP_X_OWNER_KEY'] = ' ABCDE-FGHJK-MNPQR-STUVW ';
+        Auth::requireOwner();
+        // Recuperación: sin archivo no se puede; con archivo se puede una vez y el archivo se borra.
+        throwsCode(fn () => Owner::resetKey('XXXXX-YYYYY-ZZZZZ-22222'), 'reset_not_pending');
+        touch($dir . '/data/reset-llave', time() - 2 * 3600);
+        eq(Owner::resetFile(), null, 'archivo viejo (más de 1 h) no cuenta');
+        touch($dir . '/data/reset-llave');
+        Owner::resetKey('XXXXX-YYYYY-ZZZZZ-22222');
+        eq(is_file($dir . '/data/reset-llave'), false, 'el archivo se borra solo');
+        eq(password_verify('XXXXX-YYYYY-ZZZZZ-22222', (require Config::file())['owner_key_hash']), true);
+        throwsCode(fn () => Owner::resetKey('otra-llave-12345'), 'reset_not_pending');
+    } finally {
+        Config::$fileOverride = null;
+        unset($_SERVER['HTTP_X_OWNER_KEY']);
+        array_map('unlink', glob($dir . '/data/*') ?: []);
+        @unlink($dir . '/config.php'); @rmdir($dir . '/data'); @rmdir($dir);
+    }
+});
+
 echo "\n$pass pasaron, $fail fallaron\n";
 exit($fail ? 1 : 0);

@@ -31,9 +31,12 @@ final class Config
         ];
     }
 
+    /** Solo pruebas: ruta alternativa de config.php (y de su carpeta data/). */
+    public static ?string $fileOverride = null;
+
     public static function file(): string
     {
-        return PCB_APP . '/config.php';
+        return self::$fileOverride ?? PCB_APP . '/config.php';
     }
 
     public static function installed(): bool

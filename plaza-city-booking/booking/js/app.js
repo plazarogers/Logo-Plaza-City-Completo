@@ -574,15 +574,55 @@ async function viewAdmin(tab) {
   if (tab === 'stats') return adminStats($p);
   return adminInvites($p);
 }
-function adminLogin(msg = '') {
+async function adminLogin(msg = '') {
+  // Recuperación: si el dueño creó app/data/reset-llave en el File Manager, se pide una llave nueva.
+  let reset = null;
+  try { reset = await api.get('admin-reset'); } catch {}
+  if (reset && reset.pending) {
+    $app.innerHTML = authShell(`<div class="card"><h2>${t('key.resetTitle')}</h2><p class="muted small">${t('key.resetText')}</p>${keyForm('rk', t('key.resetSave'))}</div>`);
+    bindKeyForm($app, 'rk', async (key) => {
+      await api.post('admin-reset', { key });
+      state.ownerKey = key;
+      try { sessionStorage.setItem('pcb.ownerKey', key); } catch {}
+      toast(t('key.saved'));
+      route();
+    });
+    return;
+  }
   $app.innerHTML = authShell(`<div class="card"><h2>${t('adm.title')}</h2><p class="muted small">${t('adm.desc')}</p>${msg ? `<div class="error">${esc(msg)}</div>` : ''}
     <form id="k"><label class="field"><span>${t('adm.key')}</span><input name="key" type="password" required autocomplete="current-password"></label><button class="btn primary block">${t('adm.unlock')}</button></form>
+    <details class="small" style="margin-top:12px"><summary>${t('key.lost')}</summary><p>${t('key.lostHelp', { mins: reset ? reset.minutes : 60 })}</p></details>
     <p class="small" style="margin-top:10px"><a href="#/">${t('nav.home')}</a></p></div>`);
   $app.querySelector('#k').onsubmit = (e) => {
     e.preventDefault();
-    state.ownerKey = new FormData(e.target).get('key');
+    state.ownerKey = String(new FormData(e.target).get('key')).trim();
     try { sessionStorage.setItem('pcb.ownerKey', state.ownerKey); } catch {}
     route();
+  };
+}
+// Llave tipo tarjeta: 4 grupos de 5, sin caracteres que se confunden (0/O, 1/I/l).
+function newOwnerKey() {
+  const a = 'ABCDEFGHJKMNPQRSTUVWXYZ23456789';
+  const r = crypto.getRandomValues(new Uint32Array(20));
+  return [0, 1, 2, 3].map((g) => Array.from(r.slice(g * 5, g * 5 + 5), (n) => a[n % a.length]).join('')).join('-');
+}
+function keyForm(id, saveLabel) {
+  const inp = (n, l) => `<label class="field"><span>${l}</span><input name="${n}" class="keyinput" type="text" required autocomplete="off" autocapitalize="off" spellcheck="false"></label>`;
+  return `<form id="${id}">${inp('k1', t('key.new'))}${inp('k2', t('key.repeat'))}
+    <p class="small muted">${t('key.hint')}</p><div class="err"></div>
+    <div class="row"><button type="button" class="btn" data-gen>${t('key.generate')}</button><button class="btn primary">${saveLabel}</button></div></form>`;
+}
+function bindKeyForm(root, id, save) {
+  const f = root.querySelector(`#${id}`);
+  const $err = f.querySelector('.err');
+  f.querySelector('[data-gen]').onclick = () => { const k = newOwnerKey(); f.k1.value = k; f.k2.value = k; };
+  f.onsubmit = async (e) => {
+    e.preventDefault(); $err.textContent = '';
+    const k1 = f.k1.value.trim(), k2 = f.k2.value.trim();
+    if (k1.length < 12) { $err.textContent = t('key.short'); return; }
+    if (k1 !== k2) { $err.textContent = t('key.mismatch'); return; }
+    const btn = f.querySelector('.btn.primary'); btn.disabled = true;
+    try { await save(k1); } catch (err) { $err.textContent = errorMsg(err); btn.disabled = false; }
   };
 }
 async function adminInvites($p) {
@@ -673,7 +713,15 @@ async function adminStats($p) {
     }).join('')}</div></div>
     <div class="card"><h2>${t('sta.byCompany')}</h2><div class="list">${s.companies.map((c) => `<div class="item row between"><span>${esc(c.company)}</span><b>${c.hours} h</b></div>`).join('') || '<p class="muted">—</p>'}</div></div>
     <div class="card"><button class="btn" id="csv">${t('sta.export')}</button></div>
-    <div class="card"><h2>${t('hlt.title')}</h2><div class="list" id="health">${t('common.loading')}</div></div>`;
+    <div class="card"><h2>${t('hlt.title')}</h2><div class="list" id="health">${t('common.loading')}</div></div>
+    <div class="card"><h2>${t('key.title')}</h2><p class="muted small">${t('key.changeText')}</p>${keyForm('ck', t('key.save'))}</div>`;
+  bindKeyForm($p, 'ck', async (key) => {
+    await api.post('owner/key', { key }, ownerH());
+    state.ownerKey = key;
+    try { sessionStorage.setItem('pcb.ownerKey', key); } catch {}
+    $p.querySelector('#ck').outerHTML = `<div class="success">${t('key.savedShow')}</div><p class="keyshow">${esc(key)}</p><button class="btn sm" data-copy="${esc(key)}">${t('inv.copy')}</button>`;
+    bindShare($p);
+  });
   api.get('owner/health', ownerH()).then((h) => {
     const mins = (s) => (s === null ? '—' : s < 120 ? `${s} s` : `${Math.round(s / 60)} min`);
     const row = (ok, label, detail) => `<div class="item row between"><span>${label}${detail ? `<div class="small muted">${detail}</div>` : ''}</span><span class="chip ${ok === true ? 'free' : ok === false ? 'busy' : 'past'}">${ok === true ? 'OK' : ok === false ? t('hlt.fix') : '?'}</span></div>`;

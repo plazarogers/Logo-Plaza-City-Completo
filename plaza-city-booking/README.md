@@ -78,6 +78,13 @@ Se entra con la llave de administración. No requiere cuenta de inquilino.
   push. Puedes desactivar (cierra sesiones y cancela sus apartados futuros),
   reactivar, cambiar fin de acceso y generar un **link para nueva contraseña**
   (un solo uso, 24 h) si alguien la olvida.
+- **Llave de administración** (pestaña Uso, al final). Para cambiarla, pulsa
+  *Generar* (crea una tipo tarjeta, `XXXXX-XXXXX-XXXXX-XXXXX`) y *Guardar llave*.
+  El sistema la guarda cifrada en `app/config.php`; no hay que editar archivos.
+  **Si la pierdes:** en el File Manager crea un archivo vacío llamado
+  `reset-llave` dentro de `booking/app/data/` y recarga `#/admin`. Durante 60
+  minutos el panel deja crear una llave nueva sin la anterior, y el archivo se
+  borra solo al usarlo.
 - **Cierres.** Marca un día como cerrado (mantenimiento, evento) o de uso libre,
   para un espacio o todo el edificio. Los apartados afectados se cancelan solos
   y cada afectado recibe una notificación.

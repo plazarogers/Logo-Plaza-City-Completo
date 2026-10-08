@@ -241,7 +241,7 @@ final class Auth
     public static function requireOwner(): void
     {
         $hash = (string) Config::get('owner_key_hash');
-        $key = (string) ($_SERVER['HTTP_X_OWNER_KEY'] ?? '');
+        $key = trim((string) ($_SERVER['HTTP_X_OWNER_KEY'] ?? ''));
         if ($hash === '' || $key === '' || !password_verify($key, $hash)) {
             self::rateLimit('owner', 10, 900);
             throw new AppError('owner_required', 403);
