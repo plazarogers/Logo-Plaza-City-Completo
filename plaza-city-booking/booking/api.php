@@ -231,6 +231,8 @@ try {
                 switch ($key) {
                     case 'GET owner/check':
                         respond(200, ['ok' => true]);
+                    case 'POST owner/rules':
+                        respond(200, ['rules' => Owner::setRules(body())]);
                     case 'POST owner/key':
                         Owner::setKey((string) (body()['key'] ?? ''));
                         respond(200, ['ok' => true]);

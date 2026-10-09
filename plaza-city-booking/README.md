@@ -78,6 +78,9 @@ Se entra con la llave de administración. No requiere cuenta de inquilino.
   push. Puedes desactivar (cierra sesiones y cancela sus apartados futuros),
   reactivar, cambiar fin de acceso y generar un **link para nueva contraseña**
   (un solo uso, 24 h) si alguien la olvida.
+- **Reglas de apartado** (pestaña Uso). Horas máximas por apartado, horas por
+  día por inquilino y espacio, apartados futuros por inquilino y días de
+  anticipación. Se guardan en `app/config.php` y aplican de inmediato.
 - **Llave de administración** (pestaña Uso, al final). Para cambiarla, pulsa
   *Generar* (crea una tipo tarjeta, `XXXXX-XXXXX-XXXXX-XXXXX`) y *Guardar llave*.
   El sistema la guarda cifrada en `app/config.php`; no hay que editar archivos.

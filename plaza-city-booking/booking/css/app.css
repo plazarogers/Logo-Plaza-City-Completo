@@ -354,3 +354,4 @@ body.no-nav .confirmbar { bottom: 0; }
 /* Llave de administración */
 .keyinput { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; letter-spacing: .04em; }
 .keyshow { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 1.25rem; font-weight: 700; letter-spacing: .06em; word-break: break-all; }
+label.field small { display: block; margin-top: 4px; font-size: .8rem; }

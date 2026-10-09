@@ -14,6 +14,43 @@ final class Owner
         if (strlen($key) < 12 || strlen($key) > 200) {
             throw new AppError('key_short', 400);
         }
+        self::writeConfig(function (array $cfg) use ($key) {
+            $cfg['owner_key_hash'] = password_hash($key, PASSWORD_DEFAULT);
+            return $cfg;
+        }, 'llave cambiada desde el panel');
+    }
+
+    /** Reglas que el dueño puede ajustar desde el panel, con su rango permitido. */
+    public const EDITABLE_RULES = [
+        'max_hours_per_booking' => [1, 13],
+        'max_hours_per_user_per_day' => [1, 13],
+        'max_active_bookings_per_user' => [1, 100],
+        'booking_window_days' => [1, 365],
+    ];
+
+    public static function setRules(array $in): array
+    {
+        $new = [];
+        foreach (self::EDITABLE_RULES as $k => [$min, $max]) {
+            $v = filter_var($in[$k] ?? null, FILTER_VALIDATE_INT);
+            if ($v === false || $v < $min || $v > $max) {
+                throw new AppError('bad_rule', 400, ['min' => $min, 'max' => $max]);
+            }
+            $new[$k] = $v;
+        }
+        if ($new['max_hours_per_user_per_day'] < $new['max_hours_per_booking']) {
+            throw new AppError('rule_day_lt_booking', 400);
+        }
+        self::writeConfig(function (array $cfg) use ($new) {
+            $cfg['rules'] = $new + (is_array($cfg['rules'] ?? null) ? $cfg['rules'] : []);
+            return $cfg;
+        }, 'reglas cambiadas desde el panel');
+        return Config::rules();
+    }
+
+    /** Reescribe app/config.php de forma atómica (temporal + rename) y descarta la copia en caché de PHP. */
+    private static function writeConfig(callable $mutate, string $why): void
+    {
         $file = Config::file();
         if (function_exists('opcache_invalidate')) {
             @opcache_invalidate($file, true);
@@ -22,10 +59,9 @@ final class Owner
         if (!is_array($cfg)) {
             throw new AppError('config_not_writable', 500);
         }
-        $cfg['owner_key_hash'] = password_hash($key, PASSWORD_DEFAULT);
-        $php = "<?php\n// Generado por install.php; llave cambiada desde el panel el " . gmdate('Y-m-d H:i') . " UTC. NO compartir: contiene secretos.\n"
+        $cfg = $mutate($cfg);
+        $php = "<?php\n// Generado por install.php; $why el " . gmdate('Y-m-d H:i') . " UTC. NO compartir: contiene secretos.\n"
             . "// Puedes ajustar 'rules'. Ver config.sample.php.\nreturn " . var_export($cfg, true) . ";\n";
-        // Se escribe a un archivo temporal y se renombra: config.php nunca queda a medias.
         $tmp = $file . '.tmp-' . bin2hex(random_bytes(4));
         if (@file_put_contents($tmp, $php, LOCK_EX) === false || !@chmod($tmp, 0600) || !@rename($tmp, $file)) {
             @unlink($tmp);

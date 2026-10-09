@@ -600,6 +600,29 @@ async function adminLogin(msg = '') {
     route();
   };
 }
+// Reglas de apartado que el dueño puede ajustar (se guardan en app/config.php).
+const RULE_FIELDS = [['max_hours_per_booking', 1, 13], ['max_hours_per_user_per_day', 1, 13], ['max_active_bookings_per_user', 1, 100], ['booking_window_days', 1, 365]];
+function rulesForm() {
+  const r = state.config.rules;
+  return `<form id="rules" class="grid cols-2">${RULE_FIELDS.map(([k, min, max]) => `<label class="field"><span>${t('rul.' + k)}</span><input name="${k}" type="number" inputmode="numeric" min="${min}" max="${max}" step="1" required value="${r[k]}"><small class="muted">${t('rul.' + k + '.help', { min, max })}</small></label>`).join('')}
+    <div class="span-2"><div class="err"></div><button class="btn primary">${t('rul.save')}</button></div></form>`;
+}
+function bindRulesForm(root) {
+  const f = root.querySelector('#rules');
+  const $err = f.querySelector('.err');
+  f.onsubmit = async (e) => {
+    e.preventDefault(); $err.textContent = '';
+    const body = Object.fromEntries(RULE_FIELDS.map(([k]) => [k, Number(f[k].value)]));
+    if (body.max_hours_per_user_per_day < body.max_hours_per_booking) { $err.textContent = t('rul.dayLtBooking'); return; }
+    const btn = f.querySelector('.btn.primary'); btn.disabled = true;
+    try {
+      const { rules } = await api.post('owner/rules', body, ownerH());
+      state.config.rules = rules;
+      toast(t('rul.saved'));
+    } catch (err) { $err.textContent = errorMsg(err); }
+    btn.disabled = false;
+  };
+}
 // Llave tipo tarjeta: 4 grupos de 5, sin caracteres que se confunden (0/O, 1/I/l).
 function newOwnerKey() {
   const a = 'ABCDEFGHJKMNPQRSTUVWXYZ23456789';
@@ -714,7 +737,9 @@ async function adminStats($p) {
     <div class="card"><h2>${t('sta.byCompany')}</h2><div class="list">${s.companies.map((c) => `<div class="item row between"><span>${esc(c.company)}</span><b>${c.hours} h</b></div>`).join('') || '<p class="muted">—</p>'}</div></div>
     <div class="card"><button class="btn" id="csv">${t('sta.export')}</button></div>
     <div class="card"><h2>${t('hlt.title')}</h2><div class="list" id="health">${t('common.loading')}</div></div>
+    <div class="card"><h2>${t('rul.title')}</h2><p class="muted small">${t('rul.desc')}</p>${rulesForm()}</div>
     <div class="card"><h2>${t('key.title')}</h2><p class="muted small">${t('key.changeText')}</p>${keyForm('ck', t('key.save'))}</div>`;
+  bindRulesForm($p);
   bindKeyForm($p, 'ck', async (key) => {
     await api.post('owner/key', { key }, ownerH());
     state.ownerKey = key;

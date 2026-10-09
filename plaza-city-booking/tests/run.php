@@ -486,5 +486,35 @@ test('cambiar la llave de administración reescribe config.php', function () {
     }
 });
 
+test('el dueño ajusta las reglas de apartado desde el panel', function () {
+    $dir = sys_get_temp_dir() . '/pcb-rules-' . bin2hex(random_bytes(4));
+    mkdir($dir, 0700, true);
+    Config::$fileOverride = $dir . '/config.php';
+    try {
+        $cfg = Config::all();
+        $cfg['rules'] = ['max_hours_per_booking' => 4, 'checkin_grace_minutes' => 20];
+        file_put_contents(Config::file(), '<?php return ' . var_export($cfg, true) . ';');
+        $ok = ['max_hours_per_booking' => 8, 'max_hours_per_user_per_day' => 9, 'max_active_bookings_per_user' => 12, 'booking_window_days' => 60];
+        throwsCode(fn () => Owner::setRules(['max_hours_per_booking' => 0] + $ok), 'bad_rule');
+        throwsCode(fn () => Owner::setRules(['max_hours_per_booking' => 'x'] + $ok), 'bad_rule');
+        throwsCode(fn () => Owner::setRules(['max_hours_per_user_per_day' => 5] + $ok), 'rule_day_lt_booking');
+        Owner::setRules($ok);
+        $saved = (require Config::file())['rules'];
+        eq($saved['max_hours_per_booking'], 8);
+        eq($saved['checkin_grace_minutes'], 20, 'otras reglas se conservan');
+        eq(Config::rule('max_hours_per_user_per_day'), 9, 'aplica de inmediato');
+        // Un apartado de 8 horas ahora sí se permite (antes el máximo era 4).
+        $a = user('ana@x.com');
+        $d = Time::addDays(Time::today(), 1);
+        while (!Schedule::dayStatus('conference', $d)['open'] || (int) (new DateTimeImmutable($d))->format('N') > 5) { $d = Time::addDays($d, 1); }
+        $b = Bookings::create($a, 'conference', $d, 8, 16, '');
+        eq((int) $b['end_hour'] - (int) $b['start_hour'], 8);
+        throwsCode(fn () => Bookings::create($a, 'conference', $d, 16, 18, ''), 'quota');
+    } finally {
+        Config::$fileOverride = null;
+        @unlink($dir . '/config.php'); @rmdir($dir);
+    }
+});
+
 echo "\n$pass pasaron, $fail fallaron\n";
 exit($fail ? 1 : 0);
