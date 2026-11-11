@@ -116,6 +116,9 @@ try {
         case 'POST logout':
             Auth::logout();
             respond(200, ['ok' => true]);
+        case 'POST forgot':
+            Auth::requestReset((string) (body()['email'] ?? ''));
+            respond(200, ['ok' => true]);
         case 'POST reset':
             $u = Auth::resetPassword((string) (body()['token'] ?? ''), (string) (body()['password'] ?? ''));
             respond(200, ['user' => Auth::publicUser($u)]);

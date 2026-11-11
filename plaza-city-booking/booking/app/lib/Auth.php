@@ -214,6 +214,30 @@ final class Auth
         return $token;
     }
 
+    /**
+     * "¿Olvidaste tu contraseña?": manda por correo un link para crear una nueva (24 h, un solo uso).
+     * Siempre responde igual, exista o no el correo, para no revelar quién tiene cuenta.
+     */
+    public static function requestReset(string $email): void
+    {
+        self::rateLimit('forgot', 5, 900);
+        $u = Db::one('SELECT * FROM users WHERE email = ? COLLATE NOCASE AND disabled_at IS NULL', [trim($email)]);
+        if (!$u) {
+            return;
+        }
+        // Máximo un correo cada 5 minutos por cuenta.
+        $recent = Db::value("SELECT COUNT(*) FROM password_resets WHERE user_id = ? AND created_at > strftime('%Y-%m-%dT%H:%M:%SZ', 'now', '-5 minutes')", [$u['id']]);
+        if ((int) $recent > 0) {
+            return;
+        }
+        $link = rtrim((string) Config::get('base_url'), '/') . '/#/restablecer?token=' . rawurlencode(self::createResetToken((int) $u['id']));
+        $en = $u['lang'] === 'en';
+        $text = $en
+            ? "Hi {$u['name']},\n\nSomeone (hopefully you) asked to reset your Plaza City booking password.\nOpen this link to choose a new one. It works once and expires in 24 hours:\n\n$link\n\nIf you did not ask for this, ignore this email; your password stays the same.\n\nPlaza City"
+            : "Hola {$u['name']},\n\nAlguien (seguramente tú) pidió restablecer tu contraseña del booking de Plaza City.\nAbre este link para crear una nueva. Sirve una sola vez y vence en 24 horas:\n\n$link\n\nSi no lo pediste, ignora este correo; tu contraseña no cambia.\n\nPlaza City";
+        Mailer::send($u['email'], $en ? 'Reset your Plaza City booking password' : 'Restablece tu contraseña de Plaza City', $text);
+    }
+
     public static function resetPassword(string $token, string $new): array
     {
         self::rateLimit('reset', 10, 900);

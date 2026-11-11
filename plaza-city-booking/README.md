@@ -77,7 +77,9 @@ Se entra con la llave de administración. No requiere cuenta de inquilino.
 - **Inquilinos.** Lista con última visita, apartados, no-shows y dispositivos con
   push. Puedes desactivar (cierra sesiones y cancela sus apartados futuros),
   reactivar, cambiar fin de acceso y generar un **link para nueva contraseña**
-  (un solo uso, 24 h) si alguien la olvida.
+  (un solo uso, 24 h) si alguien la olvida. Los inquilinos también pueden pedirlo
+  solos con **"¿Olvidaste tu contraseña?"** en la pantalla de entrada: el link les
+  llega por correo (enviado con `mail()` de PHP desde no-reply@ del dominio).
 - **Reglas de apartado** (pestaña Uso). Horas máximas por apartado, horas por
   día por inquilino y espacio, apartados futuros por inquilino y días de
   anticipación. Se guardan en `app/config.php` y aplican de inmediato.

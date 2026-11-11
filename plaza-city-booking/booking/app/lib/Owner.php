@@ -80,6 +80,7 @@ final class Owner
      */
     public static function resetFile(): ?string
     {
+        clearstatcache();
         foreach (glob(dirname(Config::file()) . '/data/*') ?: [] as $f) {
             if (is_file($f) && preg_match('/^reset-(llave|key)(\.txt)?$/i', basename($f))) {
                 return time() - (int) filemtime($f) <= self::RESET_MINUTES * 60 ? $f : null;

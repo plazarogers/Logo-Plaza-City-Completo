@@ -102,6 +102,7 @@ async function route() {
   try {
     if (path === '/registro') return await viewRegister(q.get('invite') || '');
     if (path === '/restablecer') return viewReset(q.get('token') || '');
+    if (path === '/olvide' && !state.user) return viewForgot();
     if (path === '/admin') return await viewAdmin(q.get('tab') || 'inv');
     if (!state.user) return viewLogin();
     if (path === '/solicitud') return await viewRequest(Number(q.get('id')));
@@ -144,8 +145,21 @@ function viewLogin() {
     <form id="f"><label class="field"><span>${t('auth.email')}</span><input name="email" type="email" required autocomplete="email"></label>
     <label class="field"><span>${t('auth.password')}</span><input name="password" type="password" required autocomplete="current-password"></label>
     <div class="err"></div><button class="btn primary block">${t('auth.enter')}</button></form>
-    <p class="muted small" style="margin-top:14px">${t('auth.onlyInvite')}</p></div>`);
+    <p style="margin-top:12px"><a href="#/olvide">${t('auth.forgot')}</a></p>
+    <p class="muted small" style="margin-top:8px">${t('auth.onlyInvite')}</p></div>`);
   bindForm('#f', async (data) => { const r = await api.post('login', data); await signedIn(r.user); go('#/'); });
+}
+// "¿Olvidaste tu contraseña?": el sistema manda por correo un link para crear una nueva.
+function viewForgot() {
+  $app.innerHTML = authShell(`<div class="card"><h2>${t('auth.forgotTitle')}</h2><p class="muted small">${t('auth.forgotText')}</p>
+    <form id="f"><label class="field"><span>${t('auth.email')}</span><input name="email" type="email" required autocomplete="email"></label>
+    <div class="err"></div><button class="btn primary block">${t('auth.forgotSend')}</button></form>
+    <p class="small" style="margin-top:12px"><a href="#/">${t('auth.backToLogin')}</a></p></div>`);
+  bindForm('#f', async (data) => {
+    await api.post('forgot', data);
+    $app.querySelector('.card').innerHTML = `<h2>${t('auth.forgotTitle')}</h2><div class="success">${t('auth.forgotSent', { email: esc(data.email) })}</div>
+      <p class="muted small">${t('auth.forgotSpam')}</p><a class="btn block" href="#/">${t('auth.backToLogin')}</a>`;
+  });
 }
 
 async function viewRegister(token) {

@@ -516,5 +516,30 @@ test('el dueño ajusta las reglas de apartado desde el panel', function () {
     }
 });
 
+test('olvidé mi contraseña: manda link por correo sin revelar quién tiene cuenta', function () {
+    Mailer::$outbox = [];
+    try {
+        $a = user('ana@x.com');
+        Auth::requestReset('nadie@x.com');
+        eq(count(Mailer::$outbox), 0, 'correo inexistente: no manda nada');
+        Auth::requestReset('  ANA@x.com ');
+        eq(count(Mailer::$outbox), 1, 'manda un correo');
+        eq(Mailer::$outbox[0]['to'], 'ana@x.com');
+        preg_match('/token=([A-Za-z0-9_%-]+)/', Mailer::$outbox[0]['text'], $m);
+        Auth::requestReset('ana@x.com');
+        eq(count(Mailer::$outbox), 1, 'no repite el correo en menos de 5 minutos');
+        $u = Auth::resetPassword(rawurldecode($m[1]), 'nueva-clave-99');
+        eq($u['email'], 'ana@x.com');
+        eq(password_verify('nueva-clave-99', Db::value('SELECT password_hash FROM users WHERE id = ?', [$a['id']])), true, 'la contraseña cambió');
+        throwsCode(fn () => Auth::resetPassword(rawurldecode($m[1]), 'otra-clave-99'), 'invalid_reset');
+        Owner::disableUser((int) $a['id']);
+        Db::run('DELETE FROM password_resets');
+        Auth::requestReset('ana@x.com');
+        eq(count(Mailer::$outbox), 1, 'cuenta desactivada: no manda');
+    } finally {
+        Mailer::$outbox = null;
+    }
+});
+
 echo "\n$pass pasaron, $fail fallaron\n";
 exit($fail ? 1 : 0);
